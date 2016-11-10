@@ -1,7 +1,7 @@
 elems:
 
   - src: ^((xmonad)\.hs)$
-    dst: ~/.<1>/<2>
+    dst: ~/.<2>/<1>
     only: f?xmonad
 
 
