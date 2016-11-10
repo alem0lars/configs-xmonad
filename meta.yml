@@ -1,0 +1,8 @@
+elems:
+
+  - src: ^((xmonad)\.hs)$
+    dst: ~/.<1>/<2>
+    only: f?xmonad
+
+
+# vim: set filetype=eruby.yaml :
