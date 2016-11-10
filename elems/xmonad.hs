@@ -30,8 +30,8 @@
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
-  variable :"xmonad.terminal_cmd",     as: :term_cmd
-  variable :"xmonad.terminal_run_cmd", as: :term_run_cmd
+  variable :"xmonad.terminal.open_cmd", as: :term_open_cmd
+  variable :"xmonad.terminal.run_cmd",  as: :term_run_cmd
 
   variable :"font.name", as: :font_name
   variable :"font.size", as: :font_size
@@ -100,7 +100,7 @@ modMask = mod4Mask
 
 -- ──────────────────────────────────────────────────── terminal ← cfg •2.2• ──┤
 
-terminal = "<%= local! :term_cmd %>"
+terminal = "<%= local! :term_open_cmd %>"
 
 -- ────────────────────────────────────────────────── scratchpad ← cfg •2.3• ──┤
 
