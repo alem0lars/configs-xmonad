@@ -211,30 +211,81 @@ xpConfig = defaultXPConfig
 
 -- lets you configure an action to occur when a window demands your attention
 -- http://xmonad.org/xmonad-docs/xmonad-contrib/XMonad-Hooks-UrgencyHook.html
--- TODO
+-- TODO check if correct
 myUrgencyHook = dzenUrgencyHook { args = ["-bg", "darkgreen", "-xs", "1"] }
 
--- TODO
-myLayout =
+-- TODO check if correct
+myLayout = smartBorders $ onWorkspace "8" simpleFloat standardLayouts
+  where
+    standardLayouts = tall ||| wide ||| full ||| circle ||| gimpLayout
+    tall   = named "tall"   $ avoidStruts basic
+    wide   = named "wide"   $ avoidStruts $ Mirror basic
+    circle = named "circle" $ avoidStruts circleSimpleDefaultResizable
+    full   = named "full"   $ noBorders Full
+		tabbedLayout = tabbedBottomAlways shrinkText defaultTheme
+    gimpLayout	 = tabbedLayout ****||* Full
 
--- TODO
-myManageHook = basicManageHook <+> manageHook defaultConfig
-  where basicManageHook = manageDocks <+> composeAll
-          [ isFullscreen --> doFullFloat
-          , className =? "Arandr" --> doFloat
-          , className =? "Pavucontrol" --> doFloat
-          , className =? "Nm-connection-editor" --> doFloat
-          , namedScratchpadManageHook scratchpads
-          ]
+-- TODO check if correct
+myManageHook = composeAll . concat $
+    [ [namedScratchpadManageHook scratchpads]
+    , [isFullscreen   --> doFloat]
+    , [isDialog       --> doFloat]
+    , [className =? c --> doFloat | c <- myCFloats]
+    , [title     =? t --> doFloat | t <- myTFloats]
+    , [resource  =? r --> doFloat | r <- myRFloats]
+    , [resource  =? i --> doIgnore | i <- myIgnores]
+    -- Needs refactor with fizzy vars for personal arrangements
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShift "1:irc" | x <- my1Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShift "2:www" | x <- my2Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShift "3:music" | x <- my3Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShiftAndGo "4:misc" | x <- my4Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShiftAndGo "5:xbmc" | x <- my5Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShiftAndGo "6:GIMP" | x <- my6Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShiftAndGo "7:slideshow!" | x <- my7Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShiftAndGo "8:foo()" | x <- my8Shifts]
+    , [(className =? x <||> title =? x <||> resource =? x) --> doShiftAndGo "9:vbox" | x <- my9Shifts]
+    ]
+    where
+    doShiftAndGo = doF . liftM2 (.) W.greedyView W.shift
+    myCFloats = ["XFontSel", "Xmessage", "Event Tester", "Arandr", "Pavucontrol", "Nm-connection-editor"]
+    myTFloats = ["Save As..."]
+    myRFloats = []
+    myIgnores = []
+    my1Shifts = []
+    my2Shifts = []
+    my3Shifts = []
+    my4Shifts = []
+    my5Shifts = []
+    my6Shifts = []
+    my7Shifts = []
+    my8Shifts = []
+    my9Shifts = []
 
--- TODO
-myHandleEventHook =
+-- TODO, seems a good starting point check if correct
+-- http://xmonad.org/xmonad-docs/xmonad-contrib/XMonad-Hooks-EwmhDesktops.html
+myHandleEventHook = ewmhDesktopsEventHook
 
--- TODO
-myLogHook =
+-- TODO check if correct
+-- http://xmonad.org/xmonad-docs/xmonad-contrib/XMonad-Hooks-DynamicLog.html
+myLogHook h = dynamicLogWithPP $ defaultPP
+  { ppOutput          = hPutStrLn h
+  -- Color palette needs refactor with fizzy vars for personal arrangements (if xmobar)
+	-- there is also for dzen2
+  , ppCurrent         = xmobarColor "#ee9a00" "#1B1D1E" . shorten 50
+  , ppHiddenNoWindows = xmobarColor "#7b7b7b" "#1B1D1E" . shorten 50
+  , ppHidden          = xmobarColor "white"   "#1B1D1E" . shorten 50
+  , ppUrgent          = xmobarColor "red"     "#1B1D1E" . xmobarStrip
+  , ppVisible         = xmobarColor "white"   "#1B1D1E" . shorten 50
+  , ppTitle           = (" " ++) . xmobarColor "#35acdb" ""
+	-- TOCHOOSE
+  -- no NSP showing up at the end of workspace list
+  , ppSort            = fmap (.scratchpadFilterOutWorkspace) $ ppSort defaultPP
+  -- , ppSort            = fmap (.scratchpadFilterOutWorkspace) getSortByTag
+  }
 
--- TODO
-myStartupHook =
+-- TODO, LG3D yes/no?
+-- myStartupHook = return ()
+myStartupHook = ewmhDesktopsStartup >> setWMName "LG3D"
 
 -- ─────────────────────────────────────────────── workspaces ← fields •4.2• ──┤
 
@@ -243,16 +294,16 @@ myWorkspaces =
 
 -- ─────────────────────────────────────────────── workspaces ← fields •4.3• ──┤
 
--- TODO
+-- TODO fizzy vars for personal arrangements
 myKeys =
 
--- TODO
+-- TODO I do not have ones
 myMouseBindings =
 
--- TODO
+-- TODO I do not have ones
 myFocusFollowsMouse =
 
--- TODO
+-- TODO I do not have ones
 myClickJustFocuses =
 
 -- ────────────────────────────────────────────────────────────────────────────┘
@@ -266,7 +317,7 @@ xConfig = defaultConfig
     XMonad.layoutHook         = myLayout
   , XMonad.manageHook         = myManageHook
   , XMonad.handleEventHook    = myHandleEventHook
-  , XMonad.logHook            = myLogHook
+  , XMonad.logHook            = myLogHook xmproc
   , XMonad.startupHook        = myStartupHook
   -- ──────────────────────────────────────────── workspaces ← xconfig •5.2• ──┤
   , XMonad.workspaces         = myWorkspaces
