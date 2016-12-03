@@ -1,0 +1,439 @@
+-- ────────────────────────────────────────────────────────────────────────────┐
+--                                                                             │
+-- Name:    elems/xmonad.hs.tt                                                 │
+-- Summary: XMonad configuration.                                              │
+-- Authors:                                                                    │
+--   - Alessandro Molari <molari.alessandro@gmail.com> (alem0lars)             │
+--                                                                             │
+-- Project:                                                                    │
+--   - Homepage:        https://github.com/alem0lars/configs-xmonad            │
+--   - Getting started: see README.md in the project root folder               │
+--                                                                             │
+-- License: Apache v2.0 (see below)                                            │
+--                                                                             │
+-- ────────────────────────────────────────────────────────────────────────────┤
+--                                                                             │
+-- Licensed to the Apache Software Foundation (ASF) under one more contributor │
+-- license agreements.  See the NOTICE file distributed with this work for     │
+-- additional information regarding copyright ownership. The ASF licenses this │
+-- file to you under the Apache License, Version 2.0 (the "License"); you may  │
+-- not use this file except in compliance with the License.                    │
+-- You may obtain a copy of the License at                                     │
+--                                                                             │
+--   http://www.apache.org/licenses/LICENSE-2.0                                │
+--                                                                             │
+-- Unless required by applicable law or agreed to in writing, software         │
+-- distributed under the License is distributed on an "AS IS" BASIS, WITHOUT   │
+-- WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.            │
+-- See the License for the specific language governing permissions and         │
+-- limitations under the License.                                              │
+--                                                                             │
+-- ────────────────────────────────────────────────────────────────────────────┤
+<% define_locals do
+  variable :"xmonad.terminal.open_cmd", as: :term_open_cmd
+  variable :"xmonad.terminal.run_cmd",  as: :term_run_cmd
+
+  variable :"font.name", as: :font_name
+  variable :"font.size", as: :font_size
+end %>
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- ┌───────────────────────────────────────────────────────────────────────────┐
+-- │                            TABLE OF CONTENTS                              │
+-- ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤
+-- │                                                                           │
+-- │ •1• imports                                                               │
+-- │ •2• xconfig                                                               │
+-- │ •3• types                                                                 │
+-- │                                                                           │
+-- └───────────────────────────────────────────────────────────────────────────┘
+
+
+-- ───────────────────────────────────────────────────────────── imports •1• ──┐
+
+import XMonad
+import XMonad.Actions.FloatSnap
+import XMonad.Hooks.UrgencyHook (dzenUrgencyHook)
+import XMonad.Hooks.EwmhDesktops (ewmh)
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- ───────────────────────────────────────────────────────────── xconfig •2• ──┐
+
+main = do
+    myStatusBarHandle <- spawnPipe myStatusBarCmd
+    xmonad $ withUrgencyHook myUrgencyHook $ ewmh xConfig myStatusBarHandle
+  where
+    xConfig myStatusBarHandle = defaultConfig
+      { XMonad.layoutHook         = myLayoutHook
+      , XMonad.manageHook         = myManageHook
+      , XMonad.handleEventHook    = myHandleEventHook
+      , XMonad.logHook            = myLogHook myStatusBarHandle
+      , XMonad.startupHook        = myStartupHook
+      , XMonad.workspaces         = myWorkspaces
+      , XMonad.modMask            = myModMask
+      , XMonad.keys               = myKeyBindings -- TODO
+      , XMonad.mouseBindings      = myMouseBindings
+      , XMonad.focusFollowsMouse  = myFocusFollowsMouse
+      , XMonad.clickJustFocuses   = myClickJustFocuses
+      , XMonad.borderWidth        = myBorderWidth
+      , XMonad.normalBorderColor  = myNormalBorderColor
+      , XMonad.focusedBorderColor = myFocusedBorderColor
+      , XMonad.terminal           = myTerminal
+      }
+
+-- ─────────────────────────────────────────────────────────── layouts •2.1• ──┤
+
+myLayoutHook = smartBorders . avoidStruts $
+    workspaceDir myWorkspaceDir $
+    mkToggle1 NBFULL    $ -- = switch to full with no borders
+    mkToggle1 REFLECTX  $ -- = reflect x-axis
+    mkToggle1 REFLECTY  $ -- = reflect y-axis
+    mkToggle1 NOBORDERS $ -- = remove borders
+    mkToggle1 MIRROR    $ -- = mirror the current layout
+    onWorkspace (myWorkspaces !! 0) myRefLayouts       $
+    onWorkspace (myWorkspaces !! 1) myWflowLayouts     $
+    onWorkspace (myWorkspaces !! 2) myWflowLayouts     $
+    onWorkspace (myWorkspaces !! 3) myWflowsuppLayouts $
+    onWorkspace (myWorkspaces !! 4) myOrgLayouts       $
+    onWorkspace (myWorkspaces !! 5) mySocialLayouts    $
+    onWorkspace (myWorkspaces !! 6) myPlayLayouts      $
+    onWorkspace (myWorkspaces !! 7) myMgmtLayouts      $
+    onWorkspace (myWorkspaces !! 8) myTmpLayouts       $
+    onWorkspace (myWorkspaces !! 9) myComboLayouts     $
+    myDefaultLayouts
+  where
+    myWorkspaceDir = "<%= local!(:workspace_dir) %>"
+
+    -- Layout groups
+    myTabbedLayout = tabbed shrinkText $ defaultTheme
+      { inactiveBorderColor = myNormalBorderColor
+      , activeBorderColor   = myFocusedBorderColor
+      , activeTextColor     = myFocusedTextColor
+      , urgentBorderColor   = myUrgentBorderColor
+      , urgentTextColor     = myUrgentTextColor
+      }
+    myRefLayouts = myTabbedLayout ||| myGridLayout
+    myWflowLayouts = myOneBigLayout ||| myMosaicLayout ||| myGridLayout ||| myTabbedLayout
+    myWflowsuppLayouts = myTabbedLayout ||| myGridLayout ||| myOneBigLayout ||| myMosaicLayout
+    myOrgLayouts = myTabbedLayout ||| myGridLayout
+    mySocialLayouts = myTabbedLayout ||| myGridLayout
+    myPlayLayouts = myTabbedLayout ||| myGridLayout
+    myMgmtLayouts = myGridLayout ||| myOneBigLayout ||| myTabbedLayout
+    myTmpLayouts = myGridLayout ||| myTabbedLayout
+    myComboLayouts = myTabbedLayout
+    mymyaultLayouts = myWflowLayouts
+
+    -- Layout definitions
+    myCrossLayout     = simpleCross
+    myFullLayout      = Full
+    myAccordionLayout = Accordion
+    myGridLayout      = Grid
+    mySpiralLayout    = spiral (1/2)
+    myMosaicLayout    = mosaic 2 [3, 2]
+    myFloatLayout     = simpleFloat
+    myOneBigLayout    = OneBig 0.6 0.74
+
+-- ──────────────────────────────────────────────────────── workspaces •2.2• ──┤
+
+myWorkspaces =
+    zipWith ((++) . show) myWorkspaceIds (map (mySeparator ++) myWorkspaceNames)
+  where
+    myWorkspaceIds = [ myDelimiter .. (show myWorkspaceIndex)  .. myDelimiter
+                     | myWorkspaceIndex <- [1..]]
+    myDelimiter = "•"
+    mySeparator = " "
+    myWorkspaceNames =
+      [ "ref"
+      , "wflow_0"
+      , "wflow_1"
+      , "wflow_supp_0"
+      , "org"
+      , "social"
+      , "play"
+      , "mgmt"
+      , "tmp"
+      , "combo"
+      ]
+
+-- ────────────────────────────────────────────────────────── log hook •2.3• ──┤
+
+myLogHook h = takeTopFocus >> dynamicLogWithPP (myStatusBarPP h)
+
+-- ───────────────────────────────────────────────────────── statusbar •2.4• ──┤
+
+myStatusBarCmd = "/usr/bin/xmobar"
+
+myStatusBarPP h = defaultPP
+    { ppCurrent = uncurry xmobarColor myCurrentColor . uncurry wrap myCurrentSymbols
+    , ppVisible = uncurry xmobarColor myVisibleColor . uncurry wrap myVisibleSymbols
+    , ppHidden  = uncurry xmobarColor myHiddenColor  . uncurry wrap myHiddenSymbols
+    , ppHiddenNoWindows = uncurry xmobarColor myEmptyColor . uncurry wrap myEmptySymbols
+    , ppUrgent  = uncurry xmobarColor myUrgentColor  . uncurry wrap myUrgentSymbols
+    , ppLayout  = uncurry xmobarColor myLayoutColor  . uncurry wrap myLayoutSymbols . take 16 . (++ repeat ' ')
+    , ppSep     = "  "
+    , ppWsSep   = " "
+    , ppTitle   = take 0
+    , ppOutput  = hPutStrLn h
+    }
+  where
+    myCurrentColor   = (myBgColor, myColors green)
+    myCurrentSymbols = (" [", "] ")
+
+    myVisibleColor   = (myBgColor, myColors cyan)
+    myVisibleSymbols = (" |", "| ")
+
+    myHiddenColor   = (myBgColor, myColors lightGrey)
+    myHiddenSymbols = (" +", "  ")
+
+    myEmptyColor   = (myBgColor, myColors grey)
+    myEmptySymbols = ("  ", "  ")
+
+    myUrgentColor   = (myColors orange, myBgColor)
+    myUrgentSymbols = (" ⚠ ", " ⚠ ")
+
+    myLayoutColor   = (myBgColor, myColors magenta)
+    myLayoutSymbols = (" ▄︻̷̿┻̿═━一 ", " # ")
+
+-- ────────────────────────────────────────────────────── startup hook •2.5• ──┤
+
+myStartupHook = ewmhDesktopsStartup >> setWMName "LG3D"
+
+-- ───────────────────────────────────────────────── handle event hook •2.6• ──┤
+
+myHandleEventHook =
+  handleEventHook defaultConfig <+>
+  docksEventHook <+>
+  ewmhDesktopsEventHook <+>
+  fullscreenEventHook
+
+-- ─────────────────────────────────────────────────────── manage hook •2.7• ──┤
+
+myManageHook = basicManageHook <+> manageHook defaultConfig
+basicManageHook = manageDocks <+> composeAll . concat $
+    [ [namedScratchpadManageHook myScratchpads]
+    , [isFullscreen --> doFullFloat]
+    , [isDialog --> doFloat]
+    , [checkXWindowQuery q --> doFloat   | q      <- myFloats]
+    , [checkXWindowQuery q --> doShift w | (q, w) <- myShifts]
+    ]
+  where
+    myFloats =
+      [ XWindowClass "Arandr"
+      , XWindowClass "Pavucontrol"
+      , XWindowClass "Copyq"
+      , XWindowClass "XFontSel"
+      , XWindowClass "Xmessage"
+      , XWindowTitle "Save As..."
+      ]
+
+    myShifts =
+      [ (XWindowClass "firefox", myWorkspaces !! 0)
+      ]
+
+-- ─────────────────────────────────────────────────────── scratchpads •2.8• ──┤
+
+myScratchpadSize = W.RationalRect (1/4) (1/4) (1/2) (1/2)
+
+myScratchpadFloat = customFloating myScratchpadSize
+
+myScratchpads =
+    [ NS "term" myTerminal           (title =? "term")    myScratchpadFloat
+    , NS "top"  (myRunCmd "htop")    (title =? "htop")    myScratchpadFloat
+    <% if has_feature? :python %>
+    , NS "ipy"  (myRunCmd "ipython") (title =? "ipython") myScratchpadFloat
+    <% end %>
+    <% if has_feature? :ruby %>
+    , NS "irb"  (myRunCmd "irb")     (title =? "irb")     myScratchpadFloat
+    <% end %>
+    <% if has_feature? :haskell %>
+    , NS "ghci" (myRunCmd "ghci")    (title =? "ghci")    myScratchpadFloat
+    <% end %>
+    ]
+  where
+    myRunCmd cmd = "<%= local! :term_run_cmd %>" cmd
+
+-- ────────────────────────────────────────────────────── key bindings •2.9• ──┤
+
+myModMask = mod4Mask
+
+mySearchEnginesKeymap method = M.fromList
+  [ ((0, xK_a), method S.alpha)
+  , ((0, xK_c), method S.codesearch)
+  , ((0, xK_d), method S.dictionary)
+  , ((0, xK_g), method S.google)
+  , ((0, xK_H), method S.hackage)
+  , ((0, xK_h), method S.hoogle)
+  , ((0, xK_i), method S.images)
+  , ((0, xK_m), method S.maps)
+  , ((0, xK_M), method S.mathworld)
+  , ((0, xK_s), method S.scholar)
+  , ((0, xK_t), method S.thesaurus)
+  , ((0, xK_W), method S.wayback)
+  , ((0, xK_w), method S.wikipedia)
+  , ((0, xK_y), method S.youtube)
+  , ((0, xK_u), method S.multi)
+  ]
+
+myScratchpadKeymap =
+  [ ("M-a t", namedScratchpadAction scratchpads "term")
+  , ("M-a i", namedScratchpadAction scratchpads "top")
+  <% if has_feature? :python %>
+  , ("M-a p", namedScratchpadAction scratchpads "ipy")
+  <% end %>
+  <% if has_feature? :ruby %>
+  , ("M-a r", namedScratchpadAction scratchpads "irb")
+  <% end %>
+  <% if has_feature? :haskell %>
+  , ("M-a h", namedScratchpadAction scratchpads "ghci")
+  <% end %>
+  , ("M-a w",   workspacePrompt myXpConfig (windows . W.greedyView))
+  , ("M-a M-w", workspacePrompt myXpConfig (windows . W.shift))
+  , ("M-a m",   manPrompt       myXpConfig)
+  , ("M-a d",   changeDir       myXpConfig)
+  , ("M-a s",   sshPrompt       myXpConfig)
+  ]
+
+-- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
+
+myMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
+    [ ((mod4Mask,               button1), myMoveWindow)
+    , ((mod4Mask .|. shiftMask, button1), myExpandWindow)
+    , ((mod4Mask,               button3), myResizeWindow)
+    ]
+  where
+    myMoveWindow =
+      \w -> focus w >>
+            mouseMoveWindow w >>
+            snapMagicMove (Just 50) (Just 50) w
+    myExpandWindow =
+      \w -> focus w >>
+            mouseMoveWindow w >>
+            snapMagicResize [L, R, U, D] (Just 50) (Just 50) w
+    myResizeWindow =
+      \w -> focus w >>
+            mouseResizeWindow w >>
+            snapMagicResize [R, D] (Just 50) (Just 50) w
+
+-- ───────────────────────────────────────────────────────────── misc •2.11• ──┤
+
+myTerminal = "<%= local! :term_open_cmd %>"
+
+-- whether focus follows the mouse pointer
+myFocusFollowsMouse = True
+
+-- whether a mouse click select the focus or is just passed to the window
+myClickJustFocuses = True
+
+-- ─────────────────────────────────────────────────────────── prompt •2.12• ──┤
+
+myXpConfig = defaultXPConfig
+  { font        = "xft:" ++ myFont
+  , bgColor     = myBgColor
+  , fgColor     = myFgColor
+  , bgHLight    = myBgHighlightColor
+  , fgHLight    = myFgHighlightColor
+  , borderColor = myNormalBorderColor
+  , position    = Top
+  }
+
+-- ─────────────────────────────────────────────────────────── colors •2.13• ──┤
+
+myColors = ColorPalette
+  { darkerGrey   = Color "151515"
+  , darkGrey     = Color "1C1C1C"
+  , grey         = Color "404040"
+  , lightGrey    = Color "888888"
+  , lighterGrey  = Color "E8E8D3"
+  , darkRed      = Color "B85335"
+  , red          = Color "CF6A4C"
+  , darkGreen    = Color "799D6A"
+  , green        = Color "99AD6A"
+  , orange       = Color "FFB964"
+  , yellow       = Color "FAD07A"
+  , blue         = Color "5771A0"
+  , darkBlue     = Color "375385"
+  , magenta      = Color "8787AF"
+  , lightMagenta = Color "C6B6EE"
+  , cyan         = Color "668799"
+  , lightCyan    = Color "8FBFDC"
+  }
+
+myNormalBorderColor  = myColors grey
+
+myFocusedBorderColor = myColors darkBlue
+myFocusedTextColor   = myColors cyan
+
+myUrgentBorderColor = myColors magenta
+myUrgentTextColor   = myColors lightMagenta
+
+myBgColor = myColors darkerGrey
+myFgColor = myColors lightGrey
+
+myBgHighlightColor = myColors darkGrey
+myFgHighlightColor = myColors lighterGrey
+
+-- ──────────────────────────────────────────────────────────── fonts •2.14• ──┤
+
+myFont = Font
+  { name = "<%= local! :font_name %>"
+  , size = "<%= local! :font_size %>"
+  }
+
+-- ──────────────────────────────────────────────────────────── sizes •2.15• ──┤
+
+myBorderWidth = 1
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- ─────────────────────────────────────────────────────────────── types •3• ──┐
+
+data Font = Font
+  { name :: String
+  , size :: Int
+  }
+
+instance Show Font where
+  show f = show $ (f name) ++ "-" ++ (f size)
+
+data Color = String
+
+instance Show Color where
+  show c = show $ "#" ++ c
+
+data ColorPalette = ColorPalette
+  { darkerGrey   :: Color
+  , darkGrey     :: Color
+  , grey         :: Color
+  , lightGrey    :: Color
+  , lighterGrey  :: Color
+  , darkRed      :: Color
+  , red          :: Color
+  , darkGreen    :: Color
+  , green        :: Color
+  , orange       :: Color
+  , yellow       :: Color
+  , blue         :: Color
+  , darkBlue     :: Color
+  , magenta      :: Color
+  , lightMagenta :: Color
+  , cyan         :: Color
+  , lightCyan    :: Color
+  }
+
+data XWindowQuery a =
+    XWindowClass    a
+  | XWindowResource a
+  | XWindowTitle    a
+
+checkXWindowQuery XWindowClass    a = className =? a
+checkXWindowQuery XWindowTitle    a = title     =? a
+checkXWindowQuery XWindowResource a = resource  =? a
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- vim: set filetype=eruby.haskell :
