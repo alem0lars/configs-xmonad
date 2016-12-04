@@ -4,5 +4,8 @@ elems:
     dst: ~/.<2>/<1>
     only: f?xmonad
 
+  - src:  ^(xmobarrc)$
+    dst:  ~/.<1>
+    only: f?xmonad && f?xmobar
 
 # vim: set filetype=eruby.yaml :

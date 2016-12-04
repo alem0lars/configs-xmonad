@@ -32,10 +32,11 @@
 <% define_locals do
   variable :"xmonad.terminal.open_cmd", as: :term_open_cmd
   variable :"xmonad.terminal.run_cmd",  as: :term_run_cmd
-  variable :"xmonad.workspace_dir",     as: :workspace_dir
 
-  variable :"font.name", as: :font_name
-  variable :"font.size", as: :font_size, type: :int
+  variable :"xmonad.workspace_dir", as: :workspace_dir
+
+  variable :"xmonad.font.name", as: :font_name
+  variable :"xmonad.font.size", as: :font_size, type: :int
 end %>
 -- ────────────────────────────────────────────────────────────────────────────┘
 
@@ -44,9 +45,27 @@ end %>
 -- │                            TABLE OF CONTENTS                              │
 -- ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤
 -- │                                                                           │
--- │ •1• imports                                                               │
--- │ •2• xconfig                                                               │
--- │ •3• types                                                                 │
+-- │ ┌──→ •1• imports                                                          │
+-- │ │                                                                         │
+-- │ ├──→ •2• xconfig                                                          │
+-- │ │     │                                                                   │
+-- │ │     ├─→ •2.01• layouts                                                  │
+-- │ │     ├─→ •2.02• workspaces                                               │
+-- │ │     ├─→ •2.03• log hook                                                 │
+-- │ │     ├─→ •2.04• statusbar                                                │
+-- │ │     ├─→ •2.05• startup hook                                             │
+-- │ │     ├─→ •2.06• handle event hook                                        │
+-- │ │     ├─→ •2.07• manage hook                                              │
+-- │ │     ├─→ •2.08• scratchpads                                              │
+-- │ │     ├─→ •2.09• key bindings                                             │
+-- │ │     ├─→ •2.10• mouse bindings                                           │
+-- │ │     ├─→ •2.11• misc                                                     │
+-- │ │     ├─→ •2.12• prompt                                                   │
+-- │ │     ├─→ •2.13• colors                                                   │
+-- │ │     ├─→ •2.14• fonts                                                    │
+-- │ │     └─→ •2.15• sizes                                                    │
+-- │ │                                                                         │
+-- │ └──→ •3• types                                                            │
 -- │                                                                           │
 -- └───────────────────────────────────────────────────────────────────────────┘
 
@@ -117,7 +136,7 @@ main = do
       `EZ.additionalKeys`          myKeyBindings
       `EZ.additionalMouseBindings` myMouseBindings
 
--- ─────────────────────────────────────────────────────────── layouts •2.1• ──┤
+-- ────────────────────────────────────────────────────────── layouts •2.01• ──┤
 
 myLayoutHook = LNB.smartBorders . HMD.avoidStruts
     $ LWD.workspaceDir myWorkspaceDir
@@ -169,10 +188,10 @@ myLayoutHook = LNB.smartBorders . HMD.avoidStruts
     myFloatLayout     = Full -- TODO simpleFloat
     myOneBigLayout    = Full -- TODO OneBig 0.6 0.74
 
--- ──────────────────────────────────────────────────────── workspaces •2.2• ──┤
+-- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
 
 myWorkspaces =
-    zipWith ((++) . show) myWorkspaceIds (map (mySeparator ++) myWorkspaceNames)
+    zipWith (++) myWorkspaceIds (map (mySeparator ++) myWorkspaceNames)
   where
     myWorkspaceIds = [ myDelimiter ++ (show myWorkspaceIndex)  ++ myDelimiter
                      | myWorkspaceIndex <- [1..]]
@@ -180,9 +199,9 @@ myWorkspaces =
     mySeparator = " "
     myWorkspaceNames =
       [ "ref"
-      , "wflow_0"
-      , "wflow_1"
-      , "wflow_supp_0"
+      , "wf"
+      , "wf"
+      , "wfs"
       , "org"
       , "social"
       , "play"
@@ -191,11 +210,11 @@ myWorkspaces =
       , "combo"
       ]
 
--- ────────────────────────────────────────────────────────── log hook •2.3• ──┤
+-- ───────────────────────────────────────────────────────── log hook •2.03• ──┤
 
 myLogHook h = HICCCMF.takeTopFocus >> HDL.dynamicLogWithPP (myStatusBarPP h)
 
--- ───────────────────────────────────────────────────────── statusbar •2.4• ──┤
+-- ──────────────────────────────────────────────────────── statusbar •2.04• ──┤
 
 myStatusBarCmd = "/usr/bin/xmobar"
 
@@ -236,18 +255,18 @@ myStatusBarPP h = HDL.defaultPP
     myLayoutColor   = (myBgColor, magenta myColors)
     myLayoutSymbols = (" ▄︻̷̿┻̿═━一 ", " # ")
 
--- ────────────────────────────────────────────────────── startup hook •2.5• ──┤
+-- ───────────────────────────────────────────────────── startup hook •2.05• ──┤
 
 myStartupHook = HEWMH.ewmhDesktopsStartup >> HWMN.setWMName "LG3D"
 
--- ───────────────────────────────────────────────── handle event hook •2.6• ──┤
+-- ──────────────────────────────────────────────── handle event hook •2.06• ──┤
 
 myHandleEventHook = handleEventHook defaultConfig
                 <+> HMD.docksEventHook
                 <+> HEWMH.ewmhDesktopsEventHook
                 <+> HEWMH.fullscreenEventHook
 
--- ─────────────────────────────────────────────────────── manage hook •2.7• ──┤
+-- ────────────────────────────────────────────────────── manage hook •2.07• ──┤
 
 myManageHook = basicManageHook <+> manageHook defaultConfig
 basicManageHook = composeAll . concat $
@@ -272,7 +291,7 @@ basicManageHook = composeAll . concat $
       [ (XWindowClass "firefox", myWorkspaces !! 0)
       ]
 
--- ─────────────────────────────────────────────────────── scratchpads •2.8• ──┤
+-- ────────────────────────────────────────────────────── scratchpads •2.08• ──┤
 
 myScratchpadSize = SS.RationalRect (1/4) (1/4) (1/2) (1/2)
 
@@ -294,7 +313,7 @@ myScratchpads =
   where
     myRunCmd cmd = "<%= local! :term_run_cmd %> " ++ cmd
 
--- ────────────────────────────────────────────────────── key bindings •2.9• ──┤
+-- ───────────────────────────────────────────────────── key bindings •2.09• ──┤
 
 myModMask = mod4Mask
 

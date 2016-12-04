@@ -1,15 +1,4 @@
-# => inherits: generic <= #
-
-
-font:
-  name: Hack
-  size: 11
-
-xmonad:
-  terminal:
-    open_cmd: openterm
-    run_cmd:  openterm --cmd
-  workspace_dir: "~"
+# => inherits: generic, with-alem0lars-fonts, with-openterm, with-xmobar <= #
 
 
 # vim: set filetype=eruby.yaml :
