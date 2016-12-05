@@ -1,8 +1,5 @@
-xmonad:
-  workspace_dir: "~"
-
 features:
-  - xmonad
+  - xmobar
 
 
 # vim: set filetype=eruby.yaml :

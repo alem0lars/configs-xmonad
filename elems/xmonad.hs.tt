@@ -1,434 +1,500 @@
--- #############################################################################
---                                                                             #
--- File informations:                                                          #
--- - Name:    xmonad/xmonad.hs.tt                                              #
--- - Summary: The XMonad configuration.                                        #
--- - Authors:                                                                  #
---   - Alessandro Molari <molari.alessandro@gmail.com> (alem0lars)             #
---   - Luca Molari       <molari.luca@gmail.com>       (LMolr)                 #
---                                                                             #
--- Project informations:                                                       #
---   - Homepage:        https://github.com/alem0lars/configs                   #
---   - Getting started: see README.md in the project root folder               #
---                                                                             #
--- License: Apache v2.0 (see below)                                            #
---                                                                             #
--- #############################################################################
---                                                                             #
--- Licensed to the Apache Software Foundation (ASF) under one more contributor #
--- license agreements.  See the NOTICE file distributed with this work for     #
--- additional information regarding copyright ownership. The ASF licenses this #
--- file to you under the Apache License, Version 2.0 (the "License"); you may  #
--- not use this file except in compliance with the License.                    #
--- You may obtain a copy of the License at                                     #
---                                                                             #
---   http://www.apache.org/licenses/LICENSE-2.0                                #
---                                                                             #
--- Unless required by applicable law or agreed to in writing, software         #
--- distributed under the License is distributed on an "AS IS" BASIS, WITHOUT   #
--- WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.            #
--- See the License for the specific language governing permissions and         #
--- limitations under the License.                                              #
---                                                                             #
--- #############################################################################
+-- ────────────────────────────────────────────────────────────────────────────┐
+--                                                                             │
+-- Name:    elems/xmonad.hs.tt                                                 │
+-- Summary: XMonad configuration.                                              │
+-- Authors:                                                                    │
+--   - Alessandro Molari <molari.alessandro@gmail.com> (alem0lars)             │
+--                                                                             │
+-- Project:                                                                    │
+--   - Homepage:        https://github.com/alem0lars/configs-xmonad            │
+--   - Getting started: see README.md in the project root folder               │
+--                                                                             │
+-- License: Apache v2.0 (see below)                                            │
+--                                                                             │
+-- ────────────────────────────────────────────────────────────────────────────┤
+--                                                                             │
+-- Licensed to the Apache Software Foundation (ASF) under one more contributor │
+-- license agreements.  See the NOTICE file distributed with this work for     │
+-- additional information regarding copyright ownership. The ASF licenses this │
+-- file to you under the Apache License, Version 2.0 (the "License"); you may  │
+-- not use this file except in compliance with the License.                    │
+-- You may obtain a copy of the License at                                     │
+--                                                                             │
+--   http://www.apache.org/licenses/LICENSE-2.0                                │
+--                                                                             │
+-- Unless required by applicable law or agreed to in writing, software         │
+-- distributed under the License is distributed on an "AS IS" BASIS, WITHOUT   │
+-- WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.            │
+-- See the License for the specific language governing permissions and         │
+-- limitations under the License.                                              │
+--                                                                             │
+-- ────────────────────────────────────────────────────────────────────────────┤
+<% define_locals do
+  variable :"xmonad.terminal.open_cmd", as: :term_open_cmd
+  variable :"xmonad.terminal.run_cmd",  as: :term_run_cmd
+
+  variable :"xmonad.workspace_dir", as: :workspace_dir
+
+  variable :"xmonad.font.name", as: :font_name
+  variable :"xmonad.font.size", as: :font_size, type: :int
+end %>
+-- ────────────────────────────────────────────────────────────────────────────┘
 
 
-{-# LANGUAGE NoMonomorphismRestriction #-}
+-- ┌───────────────────────────────────────────────────────────────────────────┐
+-- │                            TABLE OF CONTENTS                              │
+-- ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤
+-- │                                                                           │
+-- │ ┌──→ •1• imports                                                          │
+-- │ │                                                                         │
+-- │ ├──→ •2• xconfig                                                          │
+-- │ │     │                                                                   │
+-- │ │     ├─→ •2.01• layouts                                                  │
+-- │ │     ├─→ •2.02• workspaces                                               │
+-- │ │     ├─→ •2.03• log hook                                                 │
+-- │ │     ├─→ •2.04• statusbar                                                │
+-- │ │     ├─→ •2.05• startup hook                                             │
+-- │ │     ├─→ •2.06• handle event hook                                        │
+-- │ │     ├─→ •2.07• manage hook                                              │
+-- │ │     ├─→ •2.08• scratchpads                                              │
+-- │ │     ├─→ •2.09• key bindings                                             │
+-- │ │     ├─→ •2.10• mouse bindings                                           │
+-- │ │     ├─→ •2.11• misc                                                     │
+-- │ │     ├─→ •2.12• prompt                                                   │
+-- │ │     ├─→ •2.13• colors                                                   │
+-- │ │     ├─→ •2.14• fonts                                                    │
+-- │ │     └─→ •2.15• sizes                                                    │
+-- │ │                                                                         │
+-- │ └──→ •3• types                                                            │
+-- │                                                                           │
+-- └───────────────────────────────────────────────────────────────────────────┘
 
 
-import XMonad
-import Control.Monad
-
-import qualified XMonad.StackSet as W
-import qualified XMonad.Actions.Search as S
-import qualified XMonad.Actions.Submap as SM
+-- ───────────────────────────────────────────────────────────── imports •1• ──┐
 
 import qualified Data.Map as M
-import Data.Ratio
-import Graphics.X11.Xinerama
 
-import XMonad.Hooks.ICCCMFocus
+import XMonad
 
-import XMonad.Actions.FloatSnap
-import XMonad.Actions.GridSelect
-import XMonad.Actions.WithAll
-import XMonad.Actions.SwapWorkspaces
-import XMonad.Actions.SpawnOn
+import qualified XMonad.Actions.Search    as AS
+import qualified XMonad.Actions.FloatSnap as AFS
 
-import XMonad.Layout.NoBorders
-import XMonad.Layout.ResizableTile
-import XMonad.Layout.Reflect
-import XMonad.Layout.PerWorkspace(onWorkspace)
-import XMonad.Layout.Grid
-import XMonad.Layout.Tabbed
-import XMonad.Layout.Mosaic
-import XMonad.Layout.SimpleFloat
-import XMonad.Layout.Cross
-import XMonad.Layout.WindowArranger
-import XMonad.Layout.Accordion
-import XMonad.Layout.Spiral
-import XMonad.Layout.WindowNavigation
-import XMonad.Layout.Named
-import XMonad.Layout.Combo
-import XMonad.Layout.DragPane
-import XMonad.Layout.TwoPane
-import XMonad.Layout.WorkspaceDir
-import qualified XMonad.Layout.Magnifier as Mag
-import XMonad.Layout.MultiToggle
-import XMonad.Layout.MultiToggle.Instances
-import XMonad.Layout.OneBig
+import qualified XMonad.Hooks.DynamicLog   as HDL
+import qualified XMonad.Hooks.EwmhDesktops as HEWMH
+import qualified XMonad.Hooks.ICCCMFocus   as HICCCMF
+import qualified XMonad.Hooks.ManageDocks  as HMD
+import qualified XMonad.Hooks.ManageHelpers as HMH
+import qualified XMonad.Hooks.SetWMName    as HWMN
+import qualified XMonad.Hooks.UrgencyHook  as HU
 
-import XMonad.Hooks.EwmhDesktops
-import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.ManageDocks
-import XMonad.Hooks.ManageHelpers
-import XMonad.Hooks.UrgencyHook
-import XMonad.Hooks.SetWMName
+import qualified XMonad.Layout.MultiToggle           as LMT
+import qualified XMonad.Layout.MultiToggle.Instances as LMTI
+import qualified XMonad.Layout.Decoration            as LD
+import qualified XMonad.Layout.NoBorders             as LNB
+import qualified XMonad.Layout.Reflect               as LR
+import qualified XMonad.Layout.Tabbed                as LT
+import qualified XMonad.Layout.PerWorkspace          as LPW
+import qualified XMonad.Layout.WorkspaceDir          as LWD
 
-import XMonad.Prompt
-import XMonad.Prompt.Shell
-import XMonad.Prompt.Man
-import XMonad.Prompt.Workspace
-import XMonad.Prompt.AppendFile
-import XMonad.Prompt.Ssh
+import qualified XMonad.Prompt           as P
+import qualified XMonad.Prompt.Man       as PM
+import qualified XMonad.Prompt.Ssh       as PS
+import qualified XMonad.Prompt.Workspace as PW
 
-import XMonad.Util.Run(spawnPipe)
-import XMonad.Util.EZConfig(additionalKeys, additionalKeysP)
-import XMonad.Util.NamedScratchpad
-import XMonad.Util.WindowProperties(getProp32s)
+import qualified XMonad.StackSet as SS
 
-import System.IO
+import qualified XMonad.Util.NamedScratchpad as SP
+import qualified XMonad.Util.Run as R
+import qualified XMonad.Util.EZConfig as EZ
+
+-- ────────────────────────────────────────────────────────────────────────────┘
 
 
--- Color palette
-defGrey_100 = "#ffffff"
-defGrey_90 = "#e2e2e2"
-defGrey_80 = "#c6c6c6"
-defGrey_70 = "#ababab"
-defGrey_60 = "#919191"
-defGrey_50 = "#777777"
-defGrey_40 = "#5e5e5e"
-defGrey_30 = "#474747"
-defGrey_20 = "#303030"
-defGrey_10 = "#1c1c1c"
-defGrey_0 = "#000000"
-defRed_25 = "#7b0031"
-defRed_37_5 = "#b1004a"
-defRed_50 = "#ea0064"
-defRed_62_5 = "#ff5e89"
-defCyan_100 = "#3bbdb6"
-defCyan_75 = "#00cfc0"
-defCyan_62_5 = "#00aa9d"
-defOrange_75 = "#ffa500"
+-- ───────────────────────────────────────────────────────────── xconfig •2• ──┐
 
--- BG colors
-defBgColor = defGrey_10
-defAltBgColor = defGrey_20
-defFgColor = defGrey_70
-
--- Text colors
-defInactiveTextColor = defGrey_50
-defTextColor = defGrey_70
-defActiveTextColor = defGrey_90
-defUrgentTextColor = defGrey_100
-defAltTextColor = defGrey_80
-
--- Border colors
-defInactiveBorderColor = defInactiveTextColor
-defActiveBorderColor = defActiveTextColor
-defUrgentBorderColor = defUrgentTextColor
-
--- text, background
-defCurCols = (defBgColor, defActiveTextColor)
-defVisCols = (defBgColor, defInactiveTextColor)
-defHidCols = (defActiveTextColor, defBgColor)
-defEmpCols = (defInactiveTextColor, defBgColor)
-defUrgCols = (defGrey_100, defBgColor)
-defLayCols = (defAltTextColor, defAltBgColor)
-
--- Terminal
-defTerminal = "<%= get_var! 'xmonad.terminal_cmd' %>"
-
--- Font
-defFont = "<%= get_var! 'fonts.main.name' %>-<%= get_var! 'fonts.main.size' %>"
-
--- Search engines
-searchEngineMap method = M.fromList
-  [ ((0, xK_g), method S.google)
-  , ((0, xK_c), method S.codesearch)
-  , ((0, xK_t), method S.mathworld)
-  , ((0, xK_y), method S.youtube)
-  , ((0, xK_m), method S.maps)
-  , ((0, xK_d), method S.dictionary)
-  , ((0, xK_w), method S.wikipedia)
-  , ((0, xK_a), method S.alpha)
-  ]
-
--- Scratchpads
-defScratchpadSize = W.RationalRect (1/4) (1/4) (1/2) (1/2)
-defSPFloat = customFloating defScratchpadSize
-defScratchpads =
-  [ NS "term" "openterm" (title =? "term") defSPFloat
-  , NS "top"  "openterm --cmd htop" (title =? "htop") defSPFloat
-<% if has_feature? :ruby %>
-  , NS "irb"  "openterm --cmd irb" (title =? "irb") defSPFloat
-<% end %>
-<% if has_feature? :haskell %>
-  , NS "ghci" "openterm --cmd ghci" (title =? "ghci") defSPFloat
-<% end %>
-  ]
-
--- Workspaces
-defWsLbls = zipWith ((++) . show) [1..] (map (defWsLblSep ++) defWsNames)
-defWsLblSep = "_"
-defWsNames = [ "ref"
-             , "wflow_0"
-             , "wflow_1"
-             , "wflow_supp_0"
-             , "org"
-             , "social"
-             , "play"
-             , "mgmt"
-             , "tmp"
-             , "combo"
-             ]
-defCurW = (" [", "] ")
-defVisW = (" |", "| ")
-defHidW = (" +", "  ")
-defEmpW = ("  ", "  ")
-defUrgW = ("=!", "!=")
-defLayW = (" # ", " # ")
-
--- Layouts
-defLayoutHook = smartBorders . avoidStruts $
-    workspaceDir "~" $
-    mkToggle1 NBFULL $
-    mkToggle1 REFLECTX $
-    mkToggle1 REFLECTY $
-    mkToggle1 NOBORDERS $
-    mkToggle1 MIRROR $
-    onWorkspace (defWsLbls !! 0) defRefLayouts $
-    onWorkspace (defWsLbls !! 1) defWflowLayouts $
-    onWorkspace (defWsLbls !! 2) defWflowLayouts $
-    onWorkspace (defWsLbls !! 3) defWflowsuppLayouts $
-    onWorkspace (defWsLbls !! 4) defOrgLayouts $
-    onWorkspace (defWsLbls !! 5) defSocialLayouts $
-    onWorkspace (defWsLbls !! 6) defPlayLayouts $
-    onWorkspace (defWsLbls !! 7) defMgmtLayouts $
-    onWorkspace (defWsLbls !! 8) defTmpLayouts $
-    onWorkspace (defWsLbls !! 9) defComboLayouts $
-    defStdLayouts
-defTiled = ResizableTall 1 (2/100) (1/2) []
-defTabbed = tabbed shrinkText defTabbedTheme
-  where
-    defTabbedTheme = defaultTheme { inactiveBorderColor = defInactiveBorderColor
-                                  , activeBorderColor = defActiveBorderColor
-                                  , activeTextColor = defActiveTextColor
-                                  , urgentBorderColor = defUrgentBorderColor
-                                  , urgentTextColor = defUrgentTextColor
-                                  }
-
--- Layout definitions
-defCross = simpleCross
-defFull = Full
-defAccordion = Accordion
-defGrid = Grid
-defSpiral = spiral (1/2)
-defMosaic = mosaic 2 [3, 2]
-defFloat = simpleFloat
-defOneBig = OneBig 0.6 0.74
-
--- Layout groups
-defRefLayouts       = defTabbed ||| defGrid
-defWflowLayouts     = defOneBig ||| defMosaic ||| defGrid   ||| defTabbed
-defWflowsuppLayouts = defTabbed ||| defGrid   ||| defOneBig ||| defMosaic
-defOrgLayouts       = defTabbed ||| defGrid
-defSocialLayouts    = defTabbed ||| defGrid
-defPlayLayouts      = defTabbed ||| defGrid
-defMgmtLayouts      = defGrid   ||| defOneBig ||| defTabbed
-defTmpLayouts       = defGrid   ||| defTabbed
-defComboLayouts     = defTabbed
-defStdLayouts       = defWflowLayouts
-
- -- Keybindings
-defScratchpadKeymap =
-  [ ("M-a t", namedScratchpadAction defScratchpads "term")
-  , ("M-a i", namedScratchpadAction defScratchpads "top")
-<% if has_feature? :ruby %>
-  , ("M-a r", namedScratchpadAction defScratchpads "irb")
-<% end %>
-<% if has_feature? :haskell %>
-  , ("M-a h", namedScratchpadAction defScratchpads "ghci")
-<% end %>
-  , ("M-a w", workspacePrompt defXPConfig (windows . W.greedyView))
-  , ("M-a M-w", workspacePrompt defXPConfig (windows . W.shift))
-  , ("M-a m", manPrompt defXPConfig)
-  , ("M-a d", changeDir defXPConfig)
-  , ("M-a s", sshPrompt defXPConfig)
-  ]
-
--- Mouse bindings
-defMouseBindings (XConfig {XMonad.modMask = modMask}) = M.fromList
-  [ ((mod4Mask, button1), \w -> focus w >> mouseMoveWindow w >> snapMagicMove (Just 50) (Just 50) w)
-  , ((mod4Mask .|. shiftMask, button1), \w -> focus w >> mouseMoveWindow w >> snapMagicResize [L,R,U,D] (Just 50) (Just 50) w)
-  , ((mod4Mask, button3), \w -> focus w >> mouseResizeWindow w >> snapMagicResize [R,D] (Just 50) (Just 50) w)
-  ]
-
--- Statusbars
-defStatusBarPP h = defaultPP
-  { ppCurrent = uncurry dzenColor defCurCols . uncurry wrap defCurW
-  , ppVisible = uncurry dzenColor defVisCols . uncurry wrap defVisW
-  , ppHidden = uncurry dzenColor defHidCols . uncurry wrap defHidW
-  , ppHiddenNoWindows = uncurry dzenColor defEmpCols . uncurry wrap defEmpW
-  , ppUrgent = uncurry dzenColor defUrgCols . uncurry wrap defUrgW
-  , ppSep = "  "
-  , ppWsSep = " "
-  , ppTitle = take 0
-  , ppLayout = uncurry dzenColor defLayCols . uncurry wrap defLayW . take 16 . (++ repeat ' ')
-  , ppOutput = hPutStrLn h
-  }
-defStatusBarCmd screenWidth =
-  "dzen2 -e 'button2=;' -ta l -fn '" ++ defFont ++ "' -bg '" ++ defBgColor ++
-  "' -x 0 -y 0 -h <%= size = Integer(Integer(get_var!('fonts.main.size')) * 1.2); has_feature?('hidpi') ? size * 2 : size %> -w " ++ (show $ screenWidth * 0.88)
-
--- Runner
-defDMenuRunCmd = "dmenu_run -i -l 16 -fn '" ++ defFont ++ "' -p '>> '"
-
--- XP options
-defXPConfig = defaultXPConfig
-  { font = "xft:" ++ defFont
-  , fgColor = defFgColor
-  , bgColor = defBgColor
-  , fgHLight = defGrey_100
-  , bgHLight = defBgColor
-  , borderColor = defFgColor
-  , position = Top
-  }
-
--- Manage hooks
-defManageHook = basicManageHook <+> manageHook defaultConfig
-basicManageHook = manageDocks <+> composeAll
-  [ isFullscreen --> doFullFloat
-  , className =? "Arandr" --> doFloat
-  , className =? "Pavucontrol" --> doFloat
-  , className =? "Nm-connection-editor" --> doFloat
-  , namedScratchpadManageHook defScratchpads
-  ]
-
-spawnToWorkspace :: String -> String -> X ()
-spawnToWorkspace program workspace = do
-  spawn program
-  windows $ W.greedyView workspace
-
--- Startup hook
-defStartupHook = startupHook defaultConfig >> do
-  setWMName "LG3D" -- java hack
-
--- Log hook
-defLogHook h = takeTopFocus >> dynamicLogWithPP (defStatusBarPP h)
-
--- Handle event hook
-defHandleEventHook = handleEventHook defaultConfig <+>  docksEventHook <+> ewmhDesktopsEventHook <+> fullscreenEventHook
-
--- Define the screen size
---screenWidth :: Int -> IO Double
-getScreenWidth s = do
-  dsp <- openDisplay ""
-  mss <- xineramaQueryScreens dsp
-  return $ case mss of
-    Nothing -> 0
-    Just [] -> 0
-    Just ss -> if s >= 0 && s < length ss -- prevent bad index
-      then fromIntegral . xsi_width $ ss !! s else 0
-getScreenNumber = 0
-
--- Main
 main = do
+    myStatusBarHandle <- R.spawnPipe myStatusBarCmd
+    xmonad $ HU.withUrgencyHook HU.NoUrgencyHook
+           $ HEWMH.ewmh
+           $ xConfig myStatusBarHandle
+  where
+    xConfig myStatusBarHandle = defaultConfig
+      { XMonad.layoutHook         = myLayoutHook
+      , XMonad.manageHook         = myManageHook
+      , XMonad.handleEventHook    = myHandleEventHook
+      , XMonad.logHook            = myLogHook myStatusBarHandle
+      , XMonad.startupHook        = myStartupHook
+      , XMonad.workspaces         = myWorkspaces
+      , XMonad.modMask            = myModMask
+      , XMonad.focusFollowsMouse  = myFocusFollowsMouse
+      , XMonad.clickJustFocuses   = myClickJustFocuses
+      , XMonad.borderWidth        = myBorderWidth
+      , XMonad.normalBorderColor  = myColorHex myNormalBorderColor
+      , XMonad.focusedBorderColor = myColorHex myFocusedBorderColor
+      , XMonad.terminal           = myTerminal
+      }
+      `EZ.additionalKeys`          myKeyBindings
+      `EZ.additionalMouseBindings` myMouseBindings
 
-  screenWidth <- getScreenWidth getScreenNumber
+-- ────────────────────────────────────────────────────────── layouts •2.01• ──┤
 
-  defStatusBarHandle <- spawnPipe (defStatusBarCmd screenWidth)
+myLayoutHook = LNB.smartBorders . HMD.avoidStruts
+    $ LWD.workspaceDir myWorkspaceDir
+    $ LMT.mkToggle1 LMTI.NBFULL    -- switch to full with no borders
+    $ LMT.mkToggle1 LR.REFLECTX    -- reflect x-axis
+    $ LMT.mkToggle1 LR.REFLECTY    -- reflect y-axis
+    $ LMT.mkToggle1 LMTI.NOBORDERS -- remove borders
+    $ LMT.mkToggle1 LMTI.MIRROR    -- mirror the current layout
+    $ LPW.onWorkspace (myWorkspaces !! 0) myRefLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 1) myWflowLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 2) myWflowLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 3) myWflowsuppLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 4) myOrgLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 5) mySocialLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 6) myPlayLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 7) myMgmtLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 8) myTmpLayouts
+    $ LPW.onWorkspace (myWorkspaces !! 9) myComboLayouts
+    $ myDefaultLayouts
+  where
+    myWorkspaceDir = "<%= local!(:workspace_dir) %>"
 
-  xmonad $ withUrgencyHook NoUrgencyHook $ ewmh defaultConfig
-    { manageHook = defManageHook
-    , layoutHook = defLayoutHook
-    , logHook = defLogHook defStatusBarHandle
-    , handleEventHook = defHandleEventHook
-    , modMask = mod4Mask
-    , focusFollowsMouse = True
-    , terminal = defTerminal
-    , workspaces = defWsLbls
-    , borderWidth = 2
-    , normalBorderColor = defInactiveBorderColor
-    , focusedBorderColor = defActiveBorderColor
-    , startupHook = defStartupHook
-    , mouseBindings = defMouseBindings
+    -- Layout groups
+    myTabbedLayout = LT.tabbed LT.shrinkText $ LT.defaultTheme
+      { LT.inactiveBorderColor = myColorHex myNormalBorderColor
+      , LT.activeBorderColor   = myColorHex myFocusedBorderColor
+      , LT.activeTextColor     = myColorHex myFocusedTextColor
+      , LT.urgentBorderColor   = myColorHex myUrgentBorderColor
+      , LT.urgentTextColor     = myColorHex myUrgentTextColor
+      }
+    myRefLayouts = myTabbedLayout ||| myGridLayout
+    myWflowLayouts = myOneBigLayout ||| myMosaicLayout ||| myGridLayout ||| myTabbedLayout
+    myWflowsuppLayouts = myTabbedLayout ||| myGridLayout ||| myOneBigLayout ||| myMosaicLayout
+    myOrgLayouts = myTabbedLayout ||| myGridLayout
+    mySocialLayouts = myTabbedLayout ||| myGridLayout
+    myPlayLayouts = myTabbedLayout ||| myGridLayout
+    myMgmtLayouts = myGridLayout ||| myOneBigLayout ||| myTabbedLayout
+    myTmpLayouts = myGridLayout ||| myTabbedLayout
+    myComboLayouts = myTabbedLayout
+    myDefaultLayouts = myWflowLayouts
+
+    -- Layout definitions
+    myCrossLayout     = Full -- TODO simpleCross
+    myFullLayout      = Full -- TODO Full
+    myAccordionLayout = Full -- TODO Accordion
+    myGridLayout      = Full -- TODO Grid
+    mySpiralLayout    = Full -- TODO spiral (1/2)
+    myMosaicLayout    = Full -- TODO mosaic 2 [3, 2]
+    myFloatLayout     = Full -- TODO simpleFloat
+    myOneBigLayout    = Full -- TODO OneBig 0.6 0.74
+
+-- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
+
+myWorkspaces =
+    zipWith (++) myWorkspaceIds (map (mySeparator ++) myWorkspaceNames)
+  where
+    myWorkspaceIds = [ myDelimiter ++ (show myWorkspaceIndex)  ++ myDelimiter
+                     | myWorkspaceIndex <- [1..]]
+    myDelimiter = "•"
+    mySeparator = " "
+    myWorkspaceNames =
+      [ "ref"
+      , "wf"
+      , "wf"
+      , "wfs"
+      , "org"
+      , "social"
+      , "play"
+      , "mgmt"
+      , "tmp"
+      , "combo"
+      ]
+
+-- ───────────────────────────────────────────────────────── log hook •2.03• ──┤
+
+myLogHook h = HICCCMF.takeTopFocus >> HDL.dynamicLogWithPP (myStatusBarPP h)
+
+-- ──────────────────────────────────────────────────────── statusbar •2.04• ──┤
+
+myStatusBarCmd = "/usr/bin/xmobar"
+
+myStatusBarPP h = HDL.defaultPP
+    { HDL.ppCurrent         = formatStatus myCurrentColor myCurrentSymbols
+    , HDL.ppVisible         = formatStatus myVisibleColor myVisibleSymbols
+    , HDL.ppHidden          = formatStatus myHiddenColor myHiddenSymbols
+    , HDL.ppHiddenNoWindows = formatStatus myEmptyColor myEmptySymbols
+    , HDL.ppUrgent          = formatStatus myUrgentColor myUrgentSymbols
+    , HDL.ppLayout          = formatStatus myLayoutColor myLayoutSymbols
+                            . take 16 -- Maximum layout name ( TODO to be computed automatically)
+                            . (++ repeat ' ')
+    , HDL.ppSep    = "  "
+    , HDL.ppWsSep  = " "
+    , HDL.ppTitle  = take 0
+    , HDL.ppOutput = R.hPutStrLn h
     }
-    `additionalKeys`
-    [ ((0,                                      0x1008FFA9), spawn "toggle_touchpad")
-    -- { Volume Control
-    , ((0,                                      0x1008FF13), spawn "volume_up")
-    , ((0,                                      0x1008FF11), spawn "volume_down")
-    , ((0,                                      0x1008FF12), spawn "volume_mute_toggle")
-    -- }
-    -- Suspend
-    , ((0,                                      0x1008FF2F), spawn "systemctl suspend")
-    -- Turn the screen off
-    , ((mod4Mask,                               xK_o), spawn "screen_off")
-    -- { Misc Launchers
-    , ((mod4Mask,                               xK_grave), spawn defDMenuRunCmd)
-<% if has_feature? :pulseaudio %>
-    , ((mod4Mask                 .|. mod1Mask,  xK_v), spawn "pavucontrol")
-<% end %>
-    , ((mod4Mask                 .|. mod1Mask,  xK_m), spawn "<%= get_var! 'xmonad.terminal_cmd' %> cmus")
-    -- }
-    , ((mod4Mask,                               xK_s), SM.submap $ searchEngineMap $ S.promptSearch defXPConfig)
-    , ((mod4Mask                 .|. shiftMask, xK_s), SM.submap $ searchEngineMap S.selectSearch)
-    , ((mod4Mask,                               xK_Left), withFocused $ snapMove L Nothing)
-    , ((mod4Mask,                               xK_Right), withFocused $ snapMove R Nothing)
-    , ((mod4Mask,                               xK_Up), withFocused $ snapMove U Nothing)
-    , ((mod4Mask,                               xK_Down), withFocused $ snapMove D Nothing)
-    , ((mod4Mask                 .|. mod1Mask,  xK_t), sinkAll)
-    , ((mod4Mask                 .|. mod1Mask,  xK_Left), withFocused $ snapShrink R Nothing)
-    , ((mod4Mask                 .|. mod1Mask,  xK_Right), withFocused $ snapGrow R Nothing)
-    , ((mod4Mask                 .|. mod1Mask,  xK_Up), withFocused $ snapShrink D Nothing)
-    , ((mod4Mask                 .|. mod1Mask,  xK_Down), withFocused $ snapGrow D Nothing)
-    , ((mod4Mask .|. controlMask              , xK_s    ), sendMessage  Arrange)
-    , ((mod4Mask .|. controlMask .|. shiftMask, xK_s    ), sendMessage  DeArrange)
-    , ((mod4Mask .|. controlMask              , xK_Left ), sendMessage (MoveLeft      1))
-    , ((mod4Mask .|. controlMask              , xK_Right), sendMessage (MoveRight     1))
-    , ((mod4Mask .|. controlMask              , xK_Down ), sendMessage (MoveDown      1))
-    , ((mod4Mask .|. controlMask              , xK_Up   ), sendMessage (MoveUp        1))
-    , ((mod4Mask                 .|. shiftMask, xK_Left ), sendMessage (IncreaseLeft  1))
-    , ((mod4Mask                 .|. shiftMask, xK_Right), sendMessage (IncreaseRight 1))
-    , ((mod4Mask                 .|. shiftMask, xK_Down ), sendMessage (IncreaseDown  1))
-    , ((mod4Mask                 .|. shiftMask, xK_Up   ), sendMessage (IncreaseUp    1))
-    , ((mod4Mask .|. controlMask .|. shiftMask, xK_Left ), sendMessage (DecreaseLeft  1))
-    , ((mod4Mask .|. controlMask .|. shiftMask, xK_Right), sendMessage (DecreaseRight 1))
-    , ((mod4Mask .|. controlMask .|. shiftMask, xK_Down ), sendMessage (DecreaseDown  1))
-    , ((mod4Mask .|. controlMask .|. shiftMask, xK_Up   ), sendMessage (DecreaseUp    1))
-    , ((mod4Mask .|. controlMask, xK_plus), sendMessage Mag.MagnifyMore)
-    , ((mod4Mask .|. controlMask, xK_minus), sendMessage Mag.MagnifyLess)
-    , ((mod4Mask .|. controlMask, xK_o), sendMessage Mag.Toggle)
-    , ((mod4Mask .|. controlMask, xK_w), goToSelected defaultGSConfig)
-    , ((mod4Mask .|. controlMask, xK_space), sendMessage $ Toggle NBFULL)
-    , ((mod4Mask .|. controlMask, xK_x), sendMessage $ Toggle REFLECTX)
-    , ((mod4Mask .|. controlMask, xK_y), sendMessage $ Toggle REFLECTY)
-    , ((mod4Mask .|. controlMask, xK_m), sendMessage $ Toggle MIRROR)
-    , ((mod4Mask .|. controlMask, xK_b), sendMessage $ Toggle NOBORDERS)
+  where
+    -- utility function: surround with symbols and apply colors
+    formatStatus colorSpec symbolSpec = uncurry HDL.xmobarColor (myMapTuple myColorHex colorSpec)
+                                      . uncurry HDL.wrap symbolSpec
+
+    myCurrentColor   = (myBgColor, green myColors)
+    myCurrentSymbols = (" [", "] ")
+
+    myVisibleColor   = (myBgColor, cyan myColors)
+    myVisibleSymbols = (" |", "| ")
+
+    myHiddenColor   = (myBgColor, lightGrey myColors)
+    myHiddenSymbols = (" +", "  ")
+
+    myEmptyColor   = (myBgColor, grey myColors)
+    myEmptySymbols = ("  ", "  ")
+
+    myUrgentColor   = (orange myColors, myBgColor)
+    myUrgentSymbols = (" ⚠ ", " ⚠ ")
+
+    myLayoutColor   = (myBgColor, magenta myColors)
+    myLayoutSymbols = (" ▄︻̷̿┻̿═━一 ", " # ")
+
+-- ───────────────────────────────────────────────────── startup hook •2.05• ──┤
+
+myStartupHook = HEWMH.ewmhDesktopsStartup >> HWMN.setWMName "LG3D"
+
+-- ──────────────────────────────────────────────── handle event hook •2.06• ──┤
+
+myHandleEventHook = handleEventHook defaultConfig
+                <+> HMD.docksEventHook
+                <+> HEWMH.ewmhDesktopsEventHook
+                <+> HEWMH.fullscreenEventHook
+
+-- ────────────────────────────────────────────────────── manage hook •2.07• ──┤
+
+myManageHook = basicManageHook <+> manageHook defaultConfig
+basicManageHook = composeAll . concat $
+  [ [HMD.manageDocks]
+  , [SP.namedScratchpadManageHook myScratchpads]
+  , [HMH.isFullscreen --> HMH.doFullFloat]
+  , [HMH.isDialog --> doFloat]
+  , [checkXWindowQuery q --> doFloat   | q      <- myFloats]
+  , [checkXWindowQuery q --> doShift w | (q, w) <- myShifts]
+  ]
+  where
+    myFloats =
+      [ XWindowClass "Arandr"
+      , XWindowClass "Pavucontrol"
+      , XWindowClass "Copyq"
+      , XWindowClass "XFontSel"
+      , XWindowClass "Xmessage"
+      , XWindowTitle "Save As..."
+      ]
+
+    myShifts =
+      [ (XWindowClass "firefox", myWorkspaces !! 0)
+      ]
+
+-- ────────────────────────────────────────────────────── scratchpads •2.08• ──┤
+
+myScratchpadSize = SS.RationalRect (1/4) (1/4) (1/2) (1/2)
+
+myScratchpadFloat = SP.customFloating myScratchpadSize
+
+myScratchpads =
+    [ SP.NS "term" myTerminal (title =? "term") myScratchpadFloat
+    , SP.NS "top" (myRunCmd "htop") (title =? "htop") myScratchpadFloat
+    <% if has_feature? :python %>
+    , SP.NS "ipy" (myRunCmd "ipython") (title =? "ipython") myScratchpadFloat
+    <% end %>
+    <% if has_feature? :ruby %>
+    , SP.NS "irb" (myRunCmd "irb") (title =? "irb") myScratchpadFloat
+    <% end %>
+    <% if has_feature? :haskell %>
+    , SP.NS "ghci" (myRunCmd "ghci") (title =? "ghci") myScratchpadFloat
+    <% end %>
     ]
-    `additionalKeys`
-    -- 10 workspaces support using xK_0 (movement)
-    [((mod4Mask, k), windows $ W.greedyView i)
-      | (i, k) <- zip defWsLbls ([xK_1 .. xK_9] ++ [xK_0])]
-    `additionalKeys`
-    -- 10 workspaces support using xK_0 (switching)
-    [((mod4Mask .|. shiftMask, k), windows $ W.shift i)
-      | (i, k) <- zip defWsLbls ([xK_1 .. xK_9] ++ [xK_0])]
-    `additionalKeys`
-    [((mod4Mask .|. controlMask, k), windows $ swapWithCurrent i) | (i, k) <- zip defWsLbls [xK_1 ..]]
-    `additionalKeysP`
-    defScratchpadKeymap
+  where
+    myRunCmd cmd = "<%= local! :term_run_cmd %> " ++ cmd
+
+-- ───────────────────────────────────────────────────── key bindings •2.09• ──┤
+
+myModMask = mod4Mask
+
+myKeyBindings = [] -- TODO implement
+
+mySearchEnginesKeymap method = M.fromList
+  [ ((0, xK_a), method AS.alpha)
+  , ((0, xK_c), method AS.codesearch)
+  , ((0, xK_d), method AS.dictionary)
+  , ((0, xK_g), method AS.google)
+  , ((0, xK_H), method AS.hackage)
+  , ((0, xK_h), method AS.hoogle)
+  , ((0, xK_i), method AS.images)
+  , ((0, xK_m), method AS.maps)
+  , ((0, xK_M), method AS.mathworld)
+  , ((0, xK_s), method AS.scholar)
+  , ((0, xK_t), method AS.thesaurus)
+  , ((0, xK_W), method AS.wayback)
+  , ((0, xK_w), method AS.wikipedia)
+  , ((0, xK_y), method AS.youtube)
+  , ((0, xK_u), method AS.multi)
+  ]
+
+myScratchpadKeymap =
+  [ ("M-a t", SP.namedScratchpadAction myScratchpads "term")
+  , ("M-a i", SP.namedScratchpadAction myScratchpads "top")
+  <% if has_feature? :python %>
+  , ("M-a p", SP.namedScratchpadAction myScratchpads "ipy")
+  <% end %>
+  <% if has_feature? :ruby %>
+  , ("M-a r", SP.namedScratchpadAction myScratchpads "irb")
+  <% end %>
+  <% if has_feature? :haskell %>
+  , ("M-a h", SP.namedScratchpadAction myScratchpads "ghci")
+  <% end %>
+  , ("M-a w",   PW.workspacePrompt myXpConfig (windows . SS.greedyView))
+  , ("M-a M-w", PW.workspacePrompt myXpConfig (windows . SS.shift))
+  , ("M-a m",   PM.manPrompt  myXpConfig)
+  , ("M-a d",   LWD.changeDir myXpConfig)
+  , ("M-a s",   PS.sshPrompt  myXpConfig)
+  ]
+
+-- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
+
+myMouseBindings =
+    [ ((mod4Mask,               button1), myMoveWindow)
+    , ((mod4Mask .|. shiftMask, button1), myExpandWindow)
+    , ((mod4Mask,               button3), myResizeWindow)
+    ]
+  where
+    myMoveWindow =
+      \w -> focus w >>
+            mouseMoveWindow w >>
+            AFS.snapMagicMove (Just 50) (Just 50) w
+    myExpandWindow =
+      \w -> focus w >>
+            mouseMoveWindow w >>
+            AFS.snapMagicResize [AFS.L, AFS.R, AFS.U, AFS.D] (Just 50) (Just 50) w
+    myResizeWindow =
+      \w -> focus w >>
+            mouseResizeWindow w >>
+            AFS.snapMagicResize [AFS.R, AFS.D] (Just 50) (Just 50) w
+
+-- ───────────────────────────────────────────────────────────── misc •2.11• ──┤
+
+myTerminal = "<%= local! :term_open_cmd %>"
+
+-- whether focus follows the mouse pointer
+myFocusFollowsMouse = True
+
+-- whether a mouse click select the focus or is just passed to the window
+myClickJustFocuses = True
+
+-- ─────────────────────────────────────────────────────────── prompt •2.12• ──┤
+
+myXpConfig = P.defaultXPConfig
+  { P.font        = myFontXft myFont
+  , P.bgColor     = myColorHex myBgColor
+  , P.fgColor     = myColorHex myFgColor
+  , P.bgHLight    = myColorHex myBgHighlightColor
+  , P.fgHLight    = myColorHex myFgHighlightColor
+  , P.borderColor = myColorHex myNormalBorderColor
+  , P.position    = P.Top
+  }
+
+-- ─────────────────────────────────────────────────────────── colors •2.13• ──┤
+
+myColors = MyColorPalette
+  { darkerGrey   = Hex "151515"
+  , darkGrey     = Hex "1C1C1C"
+  , grey         = Hex "404040"
+  , lightGrey    = Hex "888888"
+  , lighterGrey  = Hex "E8E8D3"
+  , darkRed      = Hex "B85335"
+  , red          = Hex "CF6A4C"
+  , darkGreen    = Hex "799D6A"
+  , green        = Hex "99AD6A"
+  , orange       = Hex "FFB964"
+  , yellow       = Hex "FAD07A"
+  , blue         = Hex "5771A0"
+  , darkBlue     = Hex "375385"
+  , magenta      = Hex "8787AF"
+  , lightMagenta = Hex "C6B6EE"
+  , cyan         = Hex "668799"
+  , lightCyan    = Hex "8FBFDC"
+  }
+
+myNormalBorderColor  = grey myColors
+
+myFocusedBorderColor = darkBlue myColors
+myFocusedTextColor   = cyan myColors
+
+myUrgentBorderColor = magenta myColors
+myUrgentTextColor   = lightMagenta myColors
+
+myBgColor = darkerGrey myColors
+myFgColor = lightGrey myColors
+
+myBgHighlightColor = darkGrey myColors
+myFgHighlightColor = lighterGrey myColors
+
+-- ──────────────────────────────────────────────────────────── fonts •2.14• ──┤
+
+myFont = MyFont
+  { name = "<%= local! :font_name %>"
+  , size = <%= local! :font_size %>
+  }
+
+-- ──────────────────────────────────────────────────────────── sizes •2.15• ──┤
+
+myBorderWidth = 1
+
+-- ────────────────────────────────────────────────────────────────────────────┘
 
 
--- vim: set filetype=haskell :
+-- ─────────────────────────────────────────────────────────────── types •3• ──┐
+
+data MyFont = MyFont
+  { name :: String
+  , size :: Int
+  }
+
+myFontXft (MyFont name size) = "xft:" ++ name ++ "-" ++ show size
+
+data MyColor = Hex String
+
+myColorHex :: MyColor -> String
+myColorHex (Hex hex) = hex
+
+data MyColorPalette = MyColorPalette
+  { darkerGrey   :: MyColor
+  , darkGrey     :: MyColor
+  , grey         :: MyColor
+  , lightGrey    :: MyColor
+  , lighterGrey  :: MyColor
+  , darkRed      :: MyColor
+  , red          :: MyColor
+  , darkGreen    :: MyColor
+  , green        :: MyColor
+  , orange       :: MyColor
+  , yellow       :: MyColor
+  , blue         :: MyColor
+  , darkBlue     :: MyColor
+  , magenta      :: MyColor
+  , lightMagenta :: MyColor
+  , cyan         :: MyColor
+  , lightCyan    :: MyColor
+  }
+
+data XWindowQuery a = XWindowClass    a
+                    | XWindowResource a
+                    | XWindowTitle    a
+
+checkXWindowQuery (XWindowClass    a) = className =? a
+checkXWindowQuery (XWindowTitle    a) = title     =? a
+checkXWindowQuery (XWindowResource a) = resource  =? a
+
+myMapTuple :: (a -> b) -> (a, a) -> (b, b)
+myMapTuple f (a1, a2) = (f a1, f a2)
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- vim: set filetype=eruby.haskell :

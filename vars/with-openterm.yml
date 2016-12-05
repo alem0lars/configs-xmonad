@@ -1,0 +1,7 @@
+xmonad:
+  terminal:
+    open_cmd: openterm
+    run_cmd:  openterm --cmd
+
+
+# vim: set filetype=eruby.yaml :
