@@ -30,34 +30,54 @@
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
-  variable :"xmobar.font.name", as: :font_size
-  variable :"xmobar.font.size", as: :font_name
+  prefixed(:"xmobar.", as: nil) do
+    variable :"font.name", as: :font_name
+    variable :"font.size", as: :font_size
+  end
+
+  prefixed(:"xmonad.", as: nil) do
+    variable :colorscheme
+  end
 end %>
 -- ────────────────────────────────────────────────────────────────────────────┘
 
 
 Config
-  { font = "xft:Hask:size=9:antialias=true"
-  , bgColor = "#1B1D1E"
-  , fgColor = "grey"
-  , position = TopW C 100
-  , commands =
-    [ Run StdinReader
-    , Run MultiCpu ["-L","3","-H","50","--normal","green","--high","red"] 10
-    , Run Memory ["-t","Mem: <usedratio>%"] 10
-    , Run DynNetwork ["-L","0","-H","70","--normal","green","--high","red"] 10
-    , Run Date "%a %b %_d %l:%M" "date" 10
-    , Run BatteryP ["BAT0"]
-          ["-t", "<acstatus> <left>"
-          , "-L", "10", "-H", "80"
-          , "-l", "red", "-h", "green"
-          , "--", "-O", "<fc=red>⚡</fc>", "-o", "(<timeleft>)"]
-          10
-    ]
-  , sepChar = "%"
-  , alignSep = "}{"
-  , template = "%StdinReader%}{ | <fc=grey>%multicpu% | %memory% | %dynnetwork%</fc> | <fc=#ee9a00>%date%</fc> | <fc=green>%vol%</fc> | %battery% "
-  }
+    { font = "xft:<%= local! :font_name %>:size=<%= local! :font_size %>:antialias=true"
+    , bgColor = "<%= local!(:colorscheme)[:darker_grey] %>"
+    , fgColor = "<%= local!(:colorscheme)[:light_grey] %>"
+    , position = TopW L 90
+    , commands =
+      [ Run StdinReader
+      , Run MultiCpu
+        [ "-L", "3"
+        , "-H", "50"
+        , "--normal", "<%= local!(:colorscheme)[:green] %>"
+        , "--high",   "<%= local!(:colorscheme)[:red] %>"
+        ] 10
+      , Run Memory
+        [ "-t", "Mem: <usedratio>%"
+        ] 10
+      , Run DynNetwork
+        [ "-L", "0"
+        , "-H", "70"
+        , "--normal", "<%= local!(:colorscheme)[:green] %>"
+        , "--high",   "<%= local!(:colorscheme)[:red] %>"
+        ] 10
+      , Run Date "%a %b %_d %l:%M" "date" 10
+      , Run BatteryP ["BAT0"]
+        [ "-t", "<acstatus> <left>"
+        , "-L", "10"
+        , "-H", "80"
+        , "-l", "<%= local!(:colorscheme)[:red] %>"
+        , "-h", "<%= local!(:colorscheme)[:green] %>"
+        , "--", "-O", "<fc=<%= local!(:colorscheme)[:orange] %>>!</fc>", "-o", "(<timeleft>)"]
+        10
+      ]
+    , sepChar = "%"
+    , alignSep = "}{"
+    , template = "%StdinReader%}{ %multicpu% | %memory% | %dynnetwork% | <fc=<%= local!(:colorscheme)[:cyan] %>>%date%</fc> | <fc=green>%vol%</fc> | %battery% "
+    }
 
 
 -- vim: set filetype=eruby.haskell :

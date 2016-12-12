@@ -30,13 +30,19 @@
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
-  variable :"xmonad.terminal.open_cmd", as: :term_open_cmd
-  variable :"xmonad.terminal.run_cmd",  as: :term_run_cmd
+  prefixed(:"xmonad.", as: nil) do
+    variable :"terminal.open_cmd", as: :term_open_cmd
+    variable :"terminal.run_cmd",  as: :term_run_cmd
 
-  variable :"xmonad.workspace_dir", as: :workspace_dir
+    variable :workspace_dir
 
-  variable :"xmonad.font.name", as: :font_name
-  variable :"xmonad.font.size", as: :font_size, type: :int
+    variable :"font.name", as: :font_name
+    variable :"font.size", as: :font_size, type: :int
+
+    variable(:colorscheme) do |colorscheme|
+      Hash[colorscheme.map { |name, hex| [name.camelize, hex] }]
+    end
+  end
 end %>
 -- ────────────────────────────────────────────────────────────────────────────┘
 
@@ -72,12 +78,15 @@ end %>
 
 -- ───────────────────────────────────────────────────────────── imports •1• ──┐
 
+import System.Exit(ExitCode(ExitSuccess), exitWith)
+
 import qualified Data.Map as M
 
 import XMonad
 
-import qualified XMonad.Actions.Search    as AS
+import qualified XMonad.Actions.Search    as ASE
 import qualified XMonad.Actions.FloatSnap as AFS
+import qualified XMonad.Actions.Submap    as ASM
 
 import qualified XMonad.Hooks.DynamicLog   as HDL
 import qualified XMonad.Hooks.EwmhDesktops as HEWMH
@@ -128,9 +137,9 @@ main = do
       , XMonad.modMask            = myModMask
       , XMonad.focusFollowsMouse  = myFocusFollowsMouse
       , XMonad.clickJustFocuses   = myClickJustFocuses
-      , XMonad.borderWidth        = myBorderWidth
-      , XMonad.normalBorderColor  = myColorHex myNormalBorderColor
-      , XMonad.focusedBorderColor = myColorHex myFocusedBorderColor
+      , XMonad.borderWidth        = windowBorderWidth
+      , XMonad.normalBorderColor  = toHex normalWindowBorderColor
+      , XMonad.focusedBorderColor = toHex focusedWindowBorderColor
       , XMonad.terminal           = myTerminal
       }
       `EZ.additionalKeys`          myKeyBindings
@@ -161,11 +170,11 @@ myLayoutHook = LNB.smartBorders . HMD.avoidStruts
 
     -- Layout groups
     myTabbedLayout = LT.tabbed LT.shrinkText $ LT.defaultTheme
-      { LT.inactiveBorderColor = myColorHex myNormalBorderColor
-      , LT.activeBorderColor   = myColorHex myFocusedBorderColor
-      , LT.activeTextColor     = myColorHex myFocusedTextColor
-      , LT.urgentBorderColor   = myColorHex myUrgentBorderColor
-      , LT.urgentTextColor     = myColorHex myUrgentTextColor
+      { LT.inactiveBorderColor = toHex normalWindowBorderColor
+      , LT.activeBorderColor   = toHex focusedWindowBorderColor
+      , LT.activeTextColor     = toHex focusedWindowTextColor
+      , LT.urgentBorderColor   = toHex urgentBorderColor
+      , LT.urgentTextColor     = toHex urgentTextColor
       }
     myRefLayouts = myTabbedLayout ||| myGridLayout
     myWflowLayouts = myOneBigLayout ||| myMosaicLayout ||| myGridLayout ||| myTabbedLayout
@@ -193,10 +202,10 @@ myLayoutHook = LNB.smartBorders . HMD.avoidStruts
 myWorkspaces =
     zipWith (++) myWorkspaceIds (map (mySeparator ++) myWorkspaceNames)
   where
-    myWorkspaceIds = [ myDelimiter ++ (show myWorkspaceIndex)  ++ myDelimiter
+    myWorkspaceIds = [ (show myWorkspaceIndex)  ++ myDelimiter
                      | myWorkspaceIndex <- [1..]]
     myDelimiter = "•"
-    mySeparator = " "
+    mySeparator = ""
     myWorkspaceNames =
       [ "ref"
       , "wf"
@@ -219,12 +228,12 @@ myLogHook h = HICCCMF.takeTopFocus >> HDL.dynamicLogWithPP (myStatusBarPP h)
 myStatusBarCmd = "/usr/bin/xmobar"
 
 myStatusBarPP h = HDL.defaultPP
-    { HDL.ppCurrent         = formatStatus myCurrentColor myCurrentSymbols
-    , HDL.ppVisible         = formatStatus myVisibleColor myVisibleSymbols
-    , HDL.ppHidden          = formatStatus myHiddenColor myHiddenSymbols
-    , HDL.ppHiddenNoWindows = formatStatus myEmptyColor myEmptySymbols
-    , HDL.ppUrgent          = formatStatus myUrgentColor myUrgentSymbols
-    , HDL.ppLayout          = formatStatus myLayoutColor myLayoutSymbols
+    { HDL.ppCurrent         = formatStatus currentColor currentSymbols
+    , HDL.ppVisible         = formatStatus visibleColor visibleSymbols
+    , HDL.ppHidden          = formatStatus hiddenColor  hiddenSymbols
+    , HDL.ppHiddenNoWindows = formatStatus emptyColor   emptySymbols
+    , HDL.ppUrgent          = formatStatus urgentColor  urgentSymbols
+    , HDL.ppLayout          = formatStatus layoutColor  layoutSymbols
                             . take 16 -- Maximum layout name ( TODO to be computed automatically)
                             . (++ repeat ' ')
     , HDL.ppSep    = "  "
@@ -234,26 +243,26 @@ myStatusBarPP h = HDL.defaultPP
     }
   where
     -- utility function: surround with symbols and apply colors
-    formatStatus colorSpec symbolSpec = uncurry HDL.xmobarColor (myMapTuple myColorHex colorSpec)
+    formatStatus colorSpec symbolSpec = uncurry HDL.xmobarColor (mapT toHex colorSpec)
                                       . uncurry HDL.wrap symbolSpec
 
-    myCurrentColor   = (myBgColor, green myColors)
-    myCurrentSymbols = (" [", "] ")
+    currentColor   = (bgColor, green colors)
+    currentSymbols = (" ◄ ", " ► ")
 
-    myVisibleColor   = (myBgColor, cyan myColors)
-    myVisibleSymbols = (" |", "| ")
+    visibleColor   = (bgColor, yellow colors)
+    visibleSymbols = (" |", "| ")
 
-    myHiddenColor   = (myBgColor, lightGrey myColors)
-    myHiddenSymbols = (" +", "  ")
+    hiddenColor   = (bgColor, cyan colors)
+    hiddenSymbols = (" ⟨ ", " ⟩ ")
 
-    myEmptyColor   = (myBgColor, grey myColors)
-    myEmptySymbols = ("  ", "  ")
+    emptyColor   = (bgColor, grey colors)
+    emptySymbols = (" ∅ ", " ∅ ")
 
-    myUrgentColor   = (orange myColors, myBgColor)
-    myUrgentSymbols = (" ⚠ ", " ⚠ ")
+    urgentColor   = (bgColor, red colors)
+    urgentSymbols = (" ! ", " ! ")
 
-    myLayoutColor   = (myBgColor, magenta myColors)
-    myLayoutSymbols = (" ▄︻̷̿┻̿═━一 ", " # ")
+    layoutColor   = (bgColor, magenta colors)
+    layoutSymbols = (" λ ", " λ ")
 
 -- ───────────────────────────────────────────────────── startup hook •2.05• ──┤
 
@@ -271,7 +280,7 @@ myHandleEventHook = handleEventHook defaultConfig
 myManageHook = basicManageHook <+> manageHook defaultConfig
 basicManageHook = composeAll . concat $
   [ [HMD.manageDocks]
-  , [SP.namedScratchpadManageHook myScratchpads]
+  , [SP.namedScratchpadManageHook scratchpads]
   , [HMH.isFullscreen --> HMH.doFullFloat]
   , [HMH.isDialog --> doFloat]
   , [checkXWindowQuery q --> doFloat   | q      <- myFloats]
@@ -288,26 +297,27 @@ basicManageHook = composeAll . concat $
       ]
 
     myShifts =
-      [ (XWindowClass "firefox", myWorkspaces !! 0)
+      [ (XWindowClass "Firefox",                   myWorkspaces !! 0)
+      , (XWindowClass "Chromium-browser-chromium", myWorkspaces !! 0)
       ]
 
 -- ────────────────────────────────────────────────────── scratchpads •2.08• ──┤
 
-myScratchpadSize = SS.RationalRect (1/4) (1/4) (1/2) (1/2)
+scratchpadSize = SS.RationalRect (1/4) (1/4) (1/2) (1/2)
 
-myScratchpadFloat = SP.customFloating myScratchpadSize
+scratchpadFloat = SP.customFloating scratchpadSize
 
-myScratchpads =
-    [ SP.NS "term" myTerminal (title =? "term") myScratchpadFloat
-    , SP.NS "top" (myRunCmd "htop") (title =? "htop") myScratchpadFloat
+scratchpads =
+    [ SP.NS "term" myTerminal (title =? "term") scratchpadFloat
+    , SP.NS "top" (myRunCmd "htop") (title =? "htop") scratchpadFloat
     <% if has_feature? :python %>
-    , SP.NS "ipy" (myRunCmd "ipython") (title =? "ipython") myScratchpadFloat
+    , SP.NS "ipy" (myRunCmd "ipython") (title =? "ipython") scratchpadFloat
     <% end %>
     <% if has_feature? :ruby %>
-    , SP.NS "irb" (myRunCmd "irb") (title =? "irb") myScratchpadFloat
+    , SP.NS "irb" (myRunCmd "irb") (title =? "irb") scratchpadFloat
     <% end %>
     <% if has_feature? :haskell %>
-    , SP.NS "ghci" (myRunCmd "ghci") (title =? "ghci") myScratchpadFloat
+    , SP.NS "ghci" (myRunCmd "ghci") (title =? "ghci") scratchpadFloat
     <% end %>
     ]
   where
@@ -317,44 +327,90 @@ myScratchpads =
 
 myModMask = mod4Mask
 
-myKeyBindings = [] -- TODO implement
+myKeyBindings = []
+-- myKeyBindings = defaultKeyBindings ++ mySearchKeymap ++ [scratchpadKeymap]
+--
+-- defaultKeyBindings =
+--   [ ((myModMask .|. shiftMask, xK_Return), spawn $ myTerminal) -- %! Launch terminal
+--   , ((myModMask,               xK_p     ), spawn "dmenu_run") -- %! Launch dmenu
+--   , ((myModMask .|. shiftMask, xK_c     ), kill) -- %! Close the focused window
+--
+--   , ((myModMask,               xK_space ), sendMessage NextLayout) -- %! Rotate through the available layout algorithms
+-- -- TODO it doesn't work somehow , ((myModMask .|. shiftMask, xK_space ), setLayout $ myLayoutHook) -- %!  Reset the layouts on the current workspace to default
+--
+--   , ((myModMask,               xK_n     ), refresh) -- %! Resize viewed windows to the correct size
+--
+--   -- move focus up or down the window stack
+--   , ((myModMask,               xK_Tab   ), windows SS.focusDown) -- %! Move focus to the next window
+--   , ((myModMask .|. shiftMask, xK_Tab   ), windows SS.focusUp  ) -- %! Move focus to the previous window
+--   , ((myModMask,               xK_j     ), windows SS.focusDown) -- %! Move focus to the next window
+--   , ((myModMask,               xK_k     ), windows SS.focusUp  ) -- %! Move focus to the previous window
+--   , ((myModMask,               xK_m     ), windows SS.focusMaster  ) -- %! Move focus to the master window
+--
+--   -- modifying the window order
+--   , ((myModMask,               xK_Return), windows SS.swapMaster) -- %! Swap the focused window and the master window
+--   , ((myModMask .|. shiftMask, xK_j     ), windows SS.swapDown  ) -- %! Swap the focused window with the next window
+--   , ((myModMask .|. shiftMask, xK_k     ), windows SS.swapUp    ) -- %! Swap the focused window with the previous window
+--
+--   -- resizing the master/slave ratio
+--   , ((myModMask,               xK_h     ), sendMessage Shrink) -- %! Shrink the master area
+--   , ((myModMask,               xK_l     ), sendMessage Expand) -- %! Expand the master area
+--
+--   -- floating layer support
+--   , ((myModMask,               xK_t     ), withFocused $ windows . SS.sink) -- %! Push window back into tiling
+--
+--   -- increase or decrease number of windows in the master area
+--   , ((myModMask              , xK_comma ), sendMessage (IncMasterN 1)) -- %! Increment the number of windows in the master area
+--   , ((myModMask              , xK_period), sendMessage (IncMasterN (-1))) -- %! Deincrement the number of windows in the master area
+--
+--   -- quit, or restart
+--   , ((myModMask .|. shiftMask, xK_q     ), io (exitWith ExitSuccess)) -- %! Quit xmonad
+--   , ((myModMask              , xK_q     ), spawn "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi") -- %! Restart xmonad
+--   ]
+--
+-- scratchpadKeymap = ((myModMask, xK_a), ASM.submap . M.fromList $
+--   [ ((0, xK_t), SP.namedScratchpadAction scratchpads "term")
+--   , ((0, xK_i), SP.namedScratchpadAction scratchpads "top")
+--     <% if has_feature? :python %>
+--   , ((0, xK_p), SP.namedScratchpadAction scratchpads "ipy")
+--     <% end %>
+--     <% if has_feature? :ruby %>
+--   , ((0, xK_r), SP.namedScratchpadAction scratchpads "irb")
+--     <% end %>
+--   <% if has_feature? :haskell %>
+--   , ((0, xK_h), SP.namedScratchpadAction scratchpads "ghci")
+--     <% end %>
+--   ])
+--
+-- mySearchKeymap =
+--   [ ((myModMask, xK_s), ASM.submap $ mySearchEnginesKeymap $ ASE.promptSearch P.defaultXPConfig)
+--   , ((myModMask .|. shiftMask, xK_s), ASM.submap $ mySearchEnginesKeymap $ ASE.selectSearch)
+--   ]
+--
+-- mySearchEnginesKeymap method = M.fromList
+--   [ ((0, xK_a), method ASE.alpha)
+--   , ((0, xK_c), method ASE.codesearch)
+--   , ((0, xK_d), method ASE.dictionary)
+--   , ((0, xK_g), method ASE.google)
+--   , ((0, xK_H), method ASE.hackage)
+--   , ((0, xK_h), method ASE.hoogle)
+--   , ((0, xK_i), method ASE.images)
+--   , ((0, xK_m), method ASE.maps)
+--   , ((0, xK_M), method ASE.mathworld)
+--   , ((0, xK_s), method ASE.scholar)
+--   , ((0, xK_t), method ASE.thesaurus)
+--   , ((0, xK_W), method ASE.wayback)
+--   , ((0, xK_w), method ASE.wikipedia)
+--   , ((0, xK_y), method ASE.youtube)
+--   , ((0, xK_u), method ASE.multi)
+--   ]
 
-mySearchEnginesKeymap method = M.fromList
-  [ ((0, xK_a), method AS.alpha)
-  , ((0, xK_c), method AS.codesearch)
-  , ((0, xK_d), method AS.dictionary)
-  , ((0, xK_g), method AS.google)
-  , ((0, xK_H), method AS.hackage)
-  , ((0, xK_h), method AS.hoogle)
-  , ((0, xK_i), method AS.images)
-  , ((0, xK_m), method AS.maps)
-  , ((0, xK_M), method AS.mathworld)
-  , ((0, xK_s), method AS.scholar)
-  , ((0, xK_t), method AS.thesaurus)
-  , ((0, xK_W), method AS.wayback)
-  , ((0, xK_w), method AS.wikipedia)
-  , ((0, xK_y), method AS.youtube)
-  , ((0, xK_u), method AS.multi)
-  ]
-
-myScratchpadKeymap =
-  [ ("M-a t", SP.namedScratchpadAction myScratchpads "term")
-  , ("M-a i", SP.namedScratchpadAction myScratchpads "top")
-  <% if has_feature? :python %>
-  , ("M-a p", SP.namedScratchpadAction myScratchpads "ipy")
-  <% end %>
-  <% if has_feature? :ruby %>
-  , ("M-a r", SP.namedScratchpadAction myScratchpads "irb")
-  <% end %>
-  <% if has_feature? :haskell %>
-  , ("M-a h", SP.namedScratchpadAction myScratchpads "ghci")
-  <% end %>
-  , ("M-a w",   PW.workspacePrompt myXpConfig (windows . SS.greedyView))
-  , ("M-a M-w", PW.workspacePrompt myXpConfig (windows . SS.shift))
-  , ("M-a m",   PM.manPrompt  myXpConfig)
-  , ("M-a d",   LWD.changeDir myXpConfig)
-  , ("M-a s",   PS.sshPrompt  myXpConfig)
-  ]
+-- workspacePromptKeymap =
+--  , ((0, xK_w), PW.workspacePrompt xpConfig (windows . SS.greedyView))
+--  , ("M-a M-w", PW.workspacePrompt xpConfig (windows . SS.shift))
+--  , ("M-a m",   PM.manPrompt  xpConfig)
+--  , ("M-a d",   LWD.changeDir xpConfig)
+--  , ("M-a s",   PS.sshPrompt  xpConfig)
 
 -- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
 
@@ -389,81 +445,67 @@ myClickJustFocuses = True
 
 -- ─────────────────────────────────────────────────────────── prompt •2.12• ──┤
 
-myXpConfig = P.defaultXPConfig
-  { P.font        = myFontXft myFont
-  , P.bgColor     = myColorHex myBgColor
-  , P.fgColor     = myColorHex myFgColor
-  , P.bgHLight    = myColorHex myBgHighlightColor
-  , P.fgHLight    = myColorHex myFgHighlightColor
-  , P.borderColor = myColorHex myNormalBorderColor
+xpConfig = P.defaultXPConfig
+  { P.font        = toXft font
+  , P.bgColor     = toHex bgColor
+  , P.fgColor     = toHex fgColor
+  , P.bgHLight    = toHex bgHighlightColor
+  , P.fgHLight    = toHex fgHighlightColor
+  , P.borderColor = toHex normalWindowBorderColor
   , P.position    = P.Top
   }
 
 -- ─────────────────────────────────────────────────────────── colors •2.13• ──┤
 
-myColors = MyColorPalette
-  { darkerGrey   = Hex "151515"
-  , darkGrey     = Hex "1C1C1C"
-  , grey         = Hex "404040"
-  , lightGrey    = Hex "888888"
-  , lighterGrey  = Hex "E8E8D3"
-  , darkRed      = Hex "B85335"
-  , red          = Hex "CF6A4C"
-  , darkGreen    = Hex "799D6A"
-  , green        = Hex "99AD6A"
-  , orange       = Hex "FFB964"
-  , yellow       = Hex "FAD07A"
-  , blue         = Hex "5771A0"
-  , darkBlue     = Hex "375385"
-  , magenta      = Hex "8787AF"
-  , lightMagenta = Hex "C6B6EE"
-  , cyan         = Hex "668799"
-  , lightCyan    = Hex "8FBFDC"
+colors = ColorPalette
+  { <%= local!(:colorscheme).map do |name, hex|
+      "#{name} = Hex \"#{hex}\""
+    end.join(", ") %>
   }
 
-myNormalBorderColor  = grey myColors
+normalWindowBorderColor = grey colors
 
-myFocusedBorderColor = darkBlue myColors
-myFocusedTextColor   = cyan myColors
+focusedWindowBorderColor = darkBlue colors
+focusedWindowTextColor   = cyan colors
 
-myUrgentBorderColor = magenta myColors
-myUrgentTextColor   = lightMagenta myColors
+urgentBorderColor = magenta colors
+urgentTextColor   = lightMagenta colors
 
-myBgColor = darkerGrey myColors
-myFgColor = lightGrey myColors
+bgColor = darkerGrey colors
+fgColor = lightGrey colors
 
-myBgHighlightColor = darkGrey myColors
-myFgHighlightColor = lighterGrey myColors
+bgHighlightColor = darkGrey colors
+fgHighlightColor = lighterGrey colors
 
 -- ──────────────────────────────────────────────────────────── fonts •2.14• ──┤
 
-myFont = MyFont
+font = Font
   { name = "<%= local! :font_name %>"
-  , size = <%= local! :font_size %>
+  , size =  <%= local! :font_size %>
   }
 
 -- ──────────────────────────────────────────────────────────── sizes •2.15• ──┤
 
-myBorderWidth = 1
+windowBorderWidth = 1
 
 -- ────────────────────────────────────────────────────────────────────────────┘
 
 
 -- ─────────────────────────────────────────────────────────────── types •3• ──┐
 
-data MyFont = MyFont
+data Font = Font
   { name :: String
   , size :: Int
   }
 
-myFontXft (MyFont name size) = "xft:" ++ name ++ "-" ++ show size
+toXft (Font name size) = "xft:" ++ name ++ "-" ++ show size
 
 data MyColor = Hex String
 
-myColorHex :: MyColor -> String
-myColorHex (Hex hex) = hex
+toHex :: MyColor -> String
+toHex (Hex hex) = hex
 
-data MyColorPalette = MyColorPalette
+data ColorPalette = ColorPalette
   { darkerGrey   :: MyColor
   , darkGrey     :: MyColor
   , grey         :: MyColor
@@ -491,8 +533,8 @@ checkXWindowQuery (XWindowClass    a) = className =? a
 checkXWindowQuery (XWindowTitle    a) = title     =? a
 checkXWindowQuery (XWindowResource a) = resource  =? a
 
-myMapTuple :: (a -> b) -> (a, a) -> (b, b)
-myMapTuple f (a1, a2) = (f a1, f a2)
+mapT :: (a -> b) -> (a, a) -> (b, b)
+mapT f (a1, a2) = (f a1, f a2)
 
 -- ────────────────────────────────────────────────────────────────────────────┘
 
