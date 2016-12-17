@@ -4,8 +4,14 @@ elems:
     dst: ~/.<2>/<1>
     only: f?xmonad
 
-  - src:  ^(xmobarrc)$
-    dst:  ~/.<1>
+  - src:  ^xmobar/((?!.*\.zsh).+)$
+    dst:  <%= var!(:"xmobar.base_dir") %>/<1>
     only: f?xmonad && f?xmobar
+
+  - src:   ^xmobar/(.+\.zsh)$
+    dst:   <%= xdg_config_home(:xmobar) %>/<1>
+    perms: 755
+    only:  f?xmonad && f?xmobar
+
 
 # vim: set filetype=eruby.yaml :

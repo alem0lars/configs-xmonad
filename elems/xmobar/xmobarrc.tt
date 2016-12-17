@@ -31,6 +31,7 @@
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
   prefixed(:"xmobar.", as: nil) do
+    variable :base_dir
     variable :"font.name", as: :font_name
     variable :"font.size", as: :font_size
   end
@@ -46,9 +47,12 @@ Config
     { font = "xft:<%= local! :font_name %>:size=<%= local! :font_size %>:antialias=true"
     , bgColor = "<%= local!(:colorscheme)[:darker_grey] %>"
     , fgColor = "<%= local!(:colorscheme)[:light_grey] %>"
-    , position = TopW L 90
+    , position = TopW C 100
     , commands =
       [ Run StdinReader
+        <% if has_feature? :trayer %>
+      , Run Com "<%= local! :base_dir %>/trayer-padding-icon.zsh" [] "trayerpad" 10
+        <% end %>
       , Run MultiCpu
         [ "-L", "3"
         , "-H", "50"
@@ -76,7 +80,7 @@ Config
       ]
     , sepChar = "%"
     , alignSep = "}{"
-    , template = "%StdinReader%}{ %multicpu% | %memory% | %dynnetwork% | <fc=<%= local!(:colorscheme)[:cyan] %>>%date%</fc> | <fc=green>%vol%</fc> | %battery% "
+    , template = "%StdinReader%}{ %multicpu% | %memory% | %dynnetwork% | <fc=<%= local!(:colorscheme)[:cyan] %>>%date%</fc> | <fc=green>%vol%</fc> | %battery% <%= has_feature?(:trayer) ? '%trayerpad%' : '' %>"
     }
 
 

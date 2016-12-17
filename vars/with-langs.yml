@@ -1,0 +1,7 @@
+features:
+  - python
+  - ruby
+  - haskell
+
+
+# vim: set filetype=eruby.yaml :
