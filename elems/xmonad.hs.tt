@@ -440,8 +440,20 @@ keyBindingsInfo =
     )
     -- scratchpads
   , ( (myModMask, xK_a)
-    , ASM.submap . M.fromList $ [ (kb, action) | (kb, action, desc) <- scratchpadsKeymapsInfo ]
+    , ASM.submap . M.fromList $ [ (kb, action)
+                                | (kb, action, _) <- scratchpadsKeymaps]
     , "scratchpads"
+    )
+    -- search
+  , ( (myModMask, xK_s)
+    , ASM.submap $ (M.fromList [ (kb, ASE.promptSearch P.defaultXPConfig action)
+                               | (kb, action, _) <- searchKeymaps])
+    , "search prompt"
+    )
+  , ( (myModMask .|. shiftMask, xK_s)
+    , ASM.submap $ (M.fromList [ (kb, ASE.selectSearch action)
+                               | (kb, action, _) <- searchKeymaps])
+    , "search from selection"
     )
     -- help
   , ( (myModMask .|. shiftMask, xK_slash)
@@ -465,55 +477,119 @@ keyBindingsInfo =
 
   recompileXMonad = "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi"
 
-scratchpadsKeymapsInfo =
-  [ ((0, xK_t), SP.namedScratchpadAction scratchpads "term", "terminal")
-  , ((0, xK_i), SP.namedScratchpadAction scratchpads "top",  "process info")
+help = L.intercalate "\n" $ prettyRootBindings
+  where
+    prettyRootBindings = map [ppBinding rootKeys key rootDesc desc separator | (key, desc) <- rootBindings]
+    rootBindings       = [(key, desc) | (key, _, desc) <- keyBindingsInfo]
+    rootKeys           = map fst rootBindings
+    rootDesc           = map snd rootBindings
+
+    separator = "  "
+
+    subBindingsMapping =
+      [ ("scratchpads",           [(key, desc) | (key, _, desc) <- scratchpadsKeymaps])
+      , ("search from selection", [(key, desc) | (key, _, desc) <- searchKeymaps])
+      ]
+
+    allBindings = [insertAfter rootBindingDesc rootBindings subBinding | (rootBindingDesc, subBinding) <- subBindingsMapping]
+
+insertAfter elem list otherList = (slice 0 ((index list elem) + 1)) ++ otherList ++ (slice ((index list elem) + 1) (length list))
+  where
+    index list elem = L.findIndex (\x -> (x == elem)) list
+
+slice start stop xs = take (stop - start) $ drop start xs
+
+scratchpadsKeymaps =
+  [ ( (0, xK_t)
+    , SP.namedScratchpadAction scratchpads "term"
+    , "terminal"
+    )
+  , ( (0, xK_i)
+    , SP.namedScratchpadAction scratchpads "top"
+    , "process info"
+    )
     <% if has_feature? :python %>
-  , ((0, xK_p), SP.namedScratchpadAction scratchpads "ipy", "python repl")
+  , ( (0, xK_p)
+    , SP.namedScratchpadAction scratchpads "ipy"
+    , "python repl"
+    )
     <% end %>
     <% if has_feature? :ruby %>
-  , ((0, xK_r), SP.namedScratchpadAction scratchpads "irb", "ruby repl")
+  , ( (0, xK_r)
+    , SP.namedScratchpadAction scratchpads "irb"
+    , "ruby repl"
+    )
     <% end %>
-  <% if has_feature? :haskell %>
-  , ((0, xK_h), SP.namedScratchpadAction scratchpads "ghci", "haskell repl")
+    <% if has_feature? :haskell %>
+  , ( (0, xK_h)
+    , SP.namedScratchpadAction scratchpads "ghci"
+    , "haskell repl"
+    )
     <% end %>
   ]
 
-help = L.intercalate "\n" $ [showBinding key desc separator | (key, action, desc) <- keyBindingsInfo] ++
-    [showBinding key desc separator | (key, action, desc) <- scratchpadsKeymapsInfo]
-  where
-    separator = "  "
-
-showBinding key desc separator indent = formattedKey key ++ separator ++ formattedDesc desc
-  where
-    maxKeyLength = maxLength [ unkeyify key | (key, _, _) <- keyBindingsInfo]
-    formattedKey key = padStr maxKeyLength (unkeyify key)
-
-    formattedDesc desc = padStr maxDescLength desc
-    maxDescLength = maxLength [desc | (desc, _, _) <- keyBindingsInfo]
-
--- mySearchKeymap =
---   [ ((myModMask, xK_s), ASM.submap $ mySearchEnginesKeymap $ ASE.promptSearch P.defaultXPConfig)
---   , ((myModMask .|. shiftMask, xK_s), ASM.submap $ mySearchEnginesKeymap $ ASE.selectSearch)
---   ]
---
--- mySearchEnginesKeymap method = M.fromList
---   [ ((0, xK_a), method ASE.alpha)
---   , ((0, xK_c), method ASE.codesearch)
---   , ((0, xK_d), method ASE.dictionary)
---   , ((0, xK_g), method ASE.google)
---   , ((0, xK_H), method ASE.hackage)
---   , ((0, xK_h), method ASE.hoogle)
---   , ((0, xK_i), method ASE.images)
---   , ((0, xK_m), method ASE.maps)
---   , ((0, xK_M), method ASE.mathworld)
---   , ((0, xK_s), method ASE.scholar)
---   , ((0, xK_t), method ASE.thesaurus)
---   , ((0, xK_W), method ASE.wayback)
---   , ((0, xK_w), method ASE.wikipedia)
---   , ((0, xK_y), method ASE.youtube)
---   , ((0, xK_u), method ASE.multi)
---   ]
+searchKeymaps =
+  [ ( (0, xK_a)
+    , ASE.alpha
+    , "wolfram alpha"
+    )
+  , ( (0, xK_c)
+    , ASE.codesearch
+    , "google code"
+    )
+  , ( (0, xK_d)
+    , ASE.dictionary
+    , "dictionary.com"
+    )
+  , ( (0, xK_g)
+    , ASE.google
+    , "google search"
+    )
+  , ( (0, xK_H)
+    , ASE.hackage
+    , "hackage"
+    )
+  , ( (0, xK_h)
+    , ASE.hoogle
+    , "hoogle"
+    )
+  , ( (0, xK_i)
+    , ASE.images
+    , "google images"
+    )
+  , ( (0, xK_m)
+    , ASE.maps
+    , "google maps"
+    )
+  , ( (0, xK_M)
+    , ASE.mathworld
+    , "mathworld"
+    )
+  , ( (0, xK_s)
+    , ASE.scholar
+    , "google scholar"
+    )
+  , ( (0, xK_t)
+    , ASE.thesaurus
+    , "thesaurus.com"
+    )
+  , ( (0, xK_W)
+    , ASE.wayback
+    , "wayback"
+    )
+  , ( (0, xK_w)
+    , ASE.wikipedia
+    , "wikipedia"
+    )
+  , ( (0, xK_y)
+    , ASE.youtube
+    , "youtube"
+    )
+  , ( (0, xK_u)
+    , ASE.multi
+    , "multi-search"
+    )
+  ]
 
 -- workspacePromptKeymap =
 --  , ((0, xK_w), PW.workspacePrompt xpConfig (windows . SS.greedyView))
@@ -659,27 +735,37 @@ checkXWindowQuery (XWindowResource a) = resource  =? a
 
 -- ─────────────────────────────────────────────── misc - keybindings •3.04• ──┤
 
+-- pretty format a key-binding and its descriptive text
+ppBinding allKeys key allDesc desc separator =
+    formattedKey key ++ separator ++ formattedDesc desc
+  where
+    formattedKey key     = padStr (maxKeyLength  allKeys) (unkeyify key)
+    maxKeyLength allKeys = maxLength (map unkeyify allKeys)
+
+    formattedDesc desc    = padStr (maxDescLength allDesc) desc
+    maxDescLength allDesc = maxLength allDesc
+
 -- stringify a key binding.
-unkeyify       :: (KeyMask,KeySym) -> String
+unkeyify :: (KeyMask,KeySym) -> String
 unkeyify (m,s) =  let dp "" = ""
                       dp p  = p ++ " + "
                   in dp (vmask m) ++ keysymToString s
 
-vmask     :: KeyMask -> String
-vmask msk =  L.intercalate " + " $
-             reverse $
-             fst $
-             foldr vmask' ([],msk) masks
+vmask :: KeyMask -> String
+vmask msk = L.intercalate " + " $
+            reverse $
+            fst $
+            foldr vmask' ([],msk) masks
     where
-      masks = map (\m -> (m,show m)) [0..toEnum (bitSize msk - 1)] ++
-              [(   lockMask,"lock" )
-              ,(controlMask,"ctrl" )
-              ,(  shiftMask,"shift")
-              ,(   mod5Mask,"mod5" )
-              ,(   mod4Mask,"mod4" )
-              ,(   mod3Mask,"mod3" )
-              ,(   mod2Mask,"mod2" )
-              ,(   mod1Mask,"mod1" )
+      masks = map (\m -> (m, show m)) [0..toEnum (bitSize msk - 1)] ++
+              [ (lockMask,    "lock")
+              , (controlMask, "ctrl")
+              , (shiftMask,   "shift")
+              , (mod5Mask,    "mod5")
+              , (mod4Mask,    "mod4")
+              , (mod3Mask,    "mod3")
+              , (mod2Mask,    "mod2")
+              , (mod1Mask,    "mod1")
               ]
       vmask'   _   a@( _,0)                = a
       vmask' (m,s)   (ss,v) | v .&. m == m = (s:ss,v .&. complement m)
