@@ -152,7 +152,7 @@ main = do
       , XMonad.normalBorderColor  = toHex normalWindowBorderColor
       , XMonad.focusedBorderColor = toHex focusedWindowBorderColor
       , XMonad.terminal           = myTerminal
-      , XMonad.keys               = keyBindings
+      , XMonad.keys               = \conf@(XConfig {XMonad.modMask = modMask}) -> M.fromList [(key, action) | (key, action, _) <- keymaps]
       }
       `EZ.additionalMouseBindings` [(key, action) | (key, action, desc) <- myMouseBindings]
 
@@ -345,11 +345,8 @@ scratchpads =
 myModMask = mod4Mask
 altMask   = mod1Mask
 
-keyBindings conf@(XConfig {XMonad.modMask = modMask}) = M.fromList
-  [(key, action) | (key, action, desc) <- keyBindingsInfo]
-
-keyBindingsInfo :: [((KeyMask, KeySym), X (), String)]
-keyBindingsInfo =
+keymaps :: [((KeyMask, KeySym), X (), String)]
+keymaps =
   [ -- window management: change focus
     ( (myModMask, xK_Tab)
     , windows SS.focusDown
@@ -477,27 +474,20 @@ keyBindingsInfo =
 
   recompileXMonad = "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi"
 
-help = L.intercalate "\n" $ prettyRootBindings
+help = L.intercalate "\n" [fst ppKey ++ snd ppDesc | (ppKey, ppDesc) <- ppKeymaps]
   where
-    prettyRootBindings = map [ppBinding rootKeys key rootDesc desc separator | (key, desc) <- rootBindings]
-    rootBindings       = [(key, desc) | (key, _, desc) <- keyBindingsInfo]
-    rootKeys           = map fst rootBindings
-    rootDesc           = map snd rootBindings
+    ppKeymaps = [ppKeymap rootKeys key rootDescs desc | (key, desc) <- allKeymaps]
 
-    separator = "  "
+    allKeymaps = [(key, desc) | (key, _, desc) <- keymaps]
+    allKeys    = map fst rootKeymaps
+    allDescs   = map snd rootKeymaps
 
-    subBindingsMapping =
-      [ ("scratchpads",           [(key, desc) | (key, _, desc) <- scratchpadsKeymaps])
-      , ("search from selection", [(key, desc) | (key, _, desc) <- searchKeymaps])
+    subKeymaps =
+      [ ("scratchpads",    [(key, desc) | (key, _, desc) <- scratchpadsKeymaps])
+      , ("search methods", [(key, desc) | (key, _, desc) <- searchKeymaps])
       ]
 
-    allBindings = [insertAfter rootBindingDesc rootBindings subBinding | (rootBindingDesc, subBinding) <- subBindingsMapping]
-
-insertAfter elem list otherList = (slice 0 ((index list elem) + 1)) ++ otherList ++ (slice ((index list elem) + 1) (length list))
-  where
-    index list elem = L.findIndex (\x -> (x == elem)) list
-
-slice start stop xs = take (stop - start) $ drop start xs
+    allBindings = prettyRootBindings
 
 scratchpadsKeymaps =
   [ ( (0, xK_t)
@@ -733,19 +723,18 @@ checkXWindowQuery (XWindowClass    a) = className =? a
 checkXWindowQuery (XWindowTitle    a) = title     =? a
 checkXWindowQuery (XWindowResource a) = resource  =? a
 
--- ─────────────────────────────────────────────── misc - keybindings •3.04• ──┤
+-- ─────────────────────────────────────────────────── misc - keymaps •3.04• ──┤
 
 -- pretty format a key-binding and its descriptive text
-ppBinding allKeys key allDesc desc separator =
-    formattedKey key ++ separator ++ formattedDesc desc
+ppBinding allKeys key allDesc desc = (ppKey allKeys key, ppDesc allDesc desc)
   where
-    formattedKey key     = padStr (maxKeyLength  allKeys) (unkeyify key)
+    ppKey allKeys key    = padStr (maxKeyLength  allKeys) (unkeyify key)
     maxKeyLength allKeys = maxLength (map unkeyify allKeys)
 
-    formattedDesc desc    = padStr (maxDescLength allDesc) desc
+    ppDesc allDesc desc   = padStr (maxDescLength allDesc) desc
     maxDescLength allDesc = maxLength allDesc
 
--- stringify a key binding.
+-- stringify a key binding
 unkeyify :: (KeyMask,KeySym) -> String
 unkeyify (m,s) =  let dp "" = ""
                       dp p  = p ++ " + "
