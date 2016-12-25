@@ -145,7 +145,7 @@ main = do
       , XMonad.logHook            = myLogHook myStatusBarHandle
       , XMonad.startupHook        = myStartupHook
       , XMonad.workspaces         = myWorkspaces
-      , XMonad.modMask            = myModMask
+      , XMonad.modMask            = metaMask
       , XMonad.focusFollowsMouse  = myFocusFollowsMouse
       , XMonad.clickJustFocuses   = myClickJustFocuses
       , XMonad.borderWidth        = windowBorderWidth
@@ -342,127 +342,127 @@ scratchpads =
 
 -- ───────────────────────────────────────────────────── key bindings •2.09• ──┤
 
-myModMask = mod4Mask
+metaMask = mod4Mask
 altMask   = mod1Mask
 
 keymaps :: [((KeyMask, KeySym), X (), String)]
 keymaps =
   [ -- window management: change focus
-    ( (myModMask, xK_Tab)
+    ( (metaMask, xK_Tab)
     , windows SS.focusDown
     , "move focus to the next window"
     )
-  , ( (myModMask .|. shiftMask, xK_Tab)
+  , ( (metaMask .|. shiftMask, xK_Tab)
     , windows SS.focusUp
     , "move focus to the previous window"
     )
-  , ( (myModMask, xK_j)
+  , ( (metaMask, xK_j)
     , windows SS.focusDown
     , "move focus to the next window"
     )
-  , ( (myModMask, xK_k)
+  , ( (metaMask, xK_k)
     , windows SS.focusUp
     , "move focus to the previous window"
     )
     -- window management: swap
-  , ( (myModMask, xK_Return)
+  , ( (metaMask, xK_Return)
     , windows SS.swapMaster
     , "swap the focused window and the master window"
     )
-  , ( (myModMask .|. shiftMask, xK_j)
+  , ( (metaMask .|. shiftMask, xK_j)
     , windows SS.swapDown
     , "swap the focused window with the next window"
     )
-  , ( (myModMask .|. shiftMask, xK_k)
+  , ( (metaMask .|. shiftMask, xK_k)
     , windows SS.swapUp
     , "swap the focused window with the previous window"
     )
     -- window management: resize
-  , ( (myModMask, xK_n)
+  , ( (metaMask, xK_n)
     , refresh
     , "resize viewed windows to the correct size"
     )
-  , ( (myModMask, xK_h)
+  , ( (metaMask, xK_h)
     , sendMessage Shrink
     , "shrink the master area"
     )
-  , ( (myModMask, xK_l)
+  , ( (metaMask, xK_l)
     , sendMessage Expand
     , "expand the master area"
     )
     -- window management: float windows support
-  , ( (myModMask .|. altMask, xK_r)
+  , ( (metaMask .|. altMask, xK_r)
     , HP.placeFocused floatingWindowPlacement
     , "manually reposition focused floating window"
     )
-  , ( (myModMask, xK_t)
+  , ( (metaMask, xK_t)
     , withFocused $ windows . SS.sink
     , "push window back into tiling"
     )
     -- window management: work with master/slave windows
-  , ( (myModMask, xK_m)
+  , ( (metaMask, xK_m)
     , windows SS.focusMaster
     , "move focus to the master window"
     )
-  , ( (myModMask, xK_comma)
+  , ( (metaMask, xK_comma)
     , sendMessage (IncMasterN 1)
     , "increment the number of windows in the master area"
     )
-  , ( (myModMask, xK_period)
+  , ( (metaMask, xK_period)
     , sendMessage (IncMasterN (-1))
     , "deincrement the number of windows in the master area"
     )
     -- layout
-  , ( (myModMask, xK_space)
+  , ( (metaMask, xK_space)
     , sendMessage NextLayout
     , "rotate through the available layout algorithms"
     )
 -- TODO doesn't work
---  , ( (myModMask .|. shiftMask, xK_space)
+--  , ( (metaMask .|. shiftMask, xK_space)
 --    , setLayout myLayoutHook
 --    , "reset the layouts on the current workspace to default"
 --    )
     -- Launch
-  , ( (myModMask .|. shiftMask, xK_Return)
+  , ( (metaMask .|. shiftMask, xK_Return)
     , spawn myTerminal
     , "open terminal"
     )
-  , ( (myModMask, xK_p)
+  , ( (metaMask, xK_p)
     , spawn programLauncher
     , "open program launcher"
     )
-  , ( (myModMask .|. shiftMask, xK_c)
+  , ( (metaMask .|. shiftMask, xK_c)
     , kill
     , "close the focused window"
     )
     -- scratchpads
-  , ( (myModMask, xK_a)
+  , ( (metaMask, xK_a)
     , ASM.submap . M.fromList $ [ (kb, action)
                                 | (kb, action, _) <- scratchpadsKeymaps]
     , "scratchpads"
     )
     -- search
-  , ( (myModMask, xK_s)
+  , ( (metaMask, xK_s)
     , ASM.submap $ (M.fromList [ (kb, ASE.promptSearch P.defaultXPConfig action)
                                | (kb, action, _) <- searchKeymaps])
     , "search prompt"
     )
-  , ( (myModMask .|. shiftMask, xK_s)
+  , ( (metaMask .|. shiftMask, xK_s)
     , ASM.submap $ (M.fromList [ (kb, ASE.selectSearch action)
                                | (kb, action, _) <- searchKeymaps])
     , "search from selection"
     )
     -- help
-  , ( (myModMask .|. shiftMask, xK_slash)
+  , ( (metaMask .|. shiftMask, xK_slash)
     , spawn $ echo help
     , "show available bindings"
     )
     -- quit / restart
-  , ( (myModMask .|. shiftMask, xK_q)
+  , ( (metaMask .|. shiftMask, xK_q)
     , io (exitWith ExitSuccess)
     , "quit xmonad"
     )
-  , ( (myModMask, xK_q)
+  , ( (metaMask, xK_q)
     , spawn recompileXMonad
     , "restart xmonad"
     )
@@ -474,20 +474,31 @@ keymaps =
 
   recompileXMonad = "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi"
 
-help = L.intercalate "\n" [fst ppKey ++ snd ppDesc | (ppKey, ppDesc) <- ppKeymaps]
+help = L.intercalate "\n" ([title, concat $ replicate (length title) "─", ""] ++ [ppKey ++ " : " ++ ppDesc | (ppKey, ppDesc) <- ppKeymaps])
   where
-    ppKeymaps = [ppKeymap rootKeys key rootDescs desc | (key, desc) <- allKeymaps]
+    title = "xmonad keymaps"
+    ppKeymaps = [ppKeymap keymap allKeys allDescs | keymap <- allKeymaps]
 
-    allKeymaps = [(key, desc) | (key, _, desc) <- keymaps]
-    allKeys    = map fst rootKeymaps
-    allDescs   = map snd rootKeymaps
+    allKeymaps = addSubKeymaps rootKeymaps subKeymaps
+    allKeys    = [(key, level) | (key, _,    level) <- allKeymaps]
+    allDescs   = [desc         | (_,   desc, _)     <- allKeymaps]
 
+    rootKeymaps = [(key, desc, RootLevel) | (key, _, desc) <- keymaps]
     subKeymaps =
-      [ ("scratchpads",    [(key, desc) | (key, _, desc) <- scratchpadsKeymaps])
-      , ("search methods", [(key, desc) | (key, _, desc) <- searchKeymaps])
+      [ ("scratchpads",    [(key, desc, NestedLevel 1) | (key, _, desc) <- scratchpadsKeymaps])
+      , ("search methods", [(key, desc, NestedLevel 1) | (key, _, desc) <- searchKeymaps])
       ]
 
-    allBindings = prettyRootBindings
+data KeymapLevel = RootLevel
+                 | NestedLevel Int
+
+addSubKeymaps rootKeymaps subKeymaps = addSubKeymaps' [] rootKeymaps subKeymaps
+  where
+    addSubKeymaps' allKeymaps []           _  = allKeymaps
+    addSubKeymaps' allKeymaps rootKeymaps  [] = allKeymaps ++ rootKeymaps
+    addSubKeymaps' allKeymaps (x@(_, rootKeymapDesc, _):xs) (y@(matchingDesc, subKeymaps):ys)
+      | rootKeymapDesc == matchingDesc = addSubKeymaps' (allKeymaps ++ [x] ++ subKeymaps) xs ys
+      | otherwise                      = addSubKeymaps' (allKeymaps ++ [x])               xs (y:ys)
 
 scratchpadsKeymaps =
   [ ( (0, xK_t)
@@ -725,20 +736,26 @@ checkXWindowQuery (XWindowResource a) = resource  =? a
 
 -- ─────────────────────────────────────────────────── misc - keymaps •3.04• ──┤
 
--- pretty format a key-binding and its descriptive text
-ppBinding allKeys key allDesc desc = (ppKey allKeys key, ppDesc allDesc desc)
+-- pretty format a keymap and its descriptive text
+ppKeymap (key, desc, level) allKeys allDesc = (ppKey allKeys key level, ppDesc allDesc desc)
   where
-    ppKey allKeys key    = padStr (maxKeyLength  allKeys) (unkeyify key)
-    maxKeyLength allKeys = maxLength (map unkeyify allKeys)
+    formatKey key level = (prefix level) ++ (unkeyify key)
+      where
+        prefix RootLevel       = concat $ replicate 0 indentStr
+        prefix (NestedLevel l) = concat $ replicate l indentStr
+        indentStr = "  •  "
+
+    ppKey allKeys key level = padStr (maxKeyLength allKeys) (formatKey key level)
+    maxKeyLength allKeys = maxLength (map (\k@(key, level) -> formatKey key level) allKeys)
 
     ppDesc allDesc desc   = padStr (maxDescLength allDesc) desc
     maxDescLength allDesc = maxLength allDesc
 
--- stringify a key binding
-unkeyify :: (KeyMask,KeySym) -> String
-unkeyify (m,s) =  let dp "" = ""
-                      dp p  = p ++ " + "
-                  in dp (vmask m) ++ keysymToString s
+-- stringify a keymap
+unkeyify :: (KeyMask, KeySym) -> String
+unkeyify (m,s) = let dp "" = ""
+                     dp p  = p ++ " + "
+                 in dp (vmask m) ++ keysymToString s
 
 vmask :: KeyMask -> String
 vmask msk = L.intercalate " + " $
@@ -751,10 +768,10 @@ vmask msk = L.intercalate " + " $
               , (controlMask, "ctrl")
               , (shiftMask,   "shift")
               , (mod5Mask,    "mod5")
-              , (mod4Mask,    "mod4")
-              , (mod3Mask,    "mod3")
-              , (mod2Mask,    "mod2")
-              , (mod1Mask,    "mod1")
+              , (mod4Mask,    "meta")
+              , (mod3Mask,    "scrolllock")
+              , (mod2Mask,    "numlock")
+              , (mod1Mask,    "alt")
               ]
       vmask'   _   a@( _,0)                = a
       vmask' (m,s)   (ss,v) | v .&. m == m = (s:ss,v .&. complement m)
