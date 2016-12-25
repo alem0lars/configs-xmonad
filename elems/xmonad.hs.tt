@@ -489,17 +489,6 @@ help = L.intercalate "\n" ([title, concat $ replicate (length title) "─", ""] 
       , ("search methods", [(key, desc, NestedLevel 1) | (key, _, desc) <- searchKeymaps])
       ]
 
-data KeymapLevel = RootLevel
-                 | NestedLevel Int
-
-addSubKeymaps rootKeymaps subKeymaps = addSubKeymaps' [] rootKeymaps subKeymaps
-  where
-    addSubKeymaps' allKeymaps []           _  = allKeymaps
-    addSubKeymaps' allKeymaps rootKeymaps  [] = allKeymaps ++ rootKeymaps
-    addSubKeymaps' allKeymaps (x@(_, rootKeymapDesc, _):xs) (y@(matchingDesc, subKeymaps):ys)
-      | rootKeymapDesc == matchingDesc = addSubKeymaps' (allKeymaps ++ [x] ++ subKeymaps) xs ys
-      | otherwise                      = addSubKeymaps' (allKeymaps ++ [x])               xs (y:ys)
-
 scratchpadsKeymaps =
   [ ( (0, xK_t)
     , SP.namedScratchpadAction scratchpads "term"
@@ -735,6 +724,18 @@ checkXWindowQuery (XWindowTitle    a) = title     =? a
 checkXWindowQuery (XWindowResource a) = resource  =? a
 
 -- ─────────────────────────────────────────────────── misc - keymaps •3.04• ──┤
+
+data KeymapLevel = RootLevel
+                 | NestedLevel Int
+
+-- merge sub-keymaps with root-keymaps
+addSubKeymaps rootKeymaps subKeymaps = addSubKeymaps' [] rootKeymaps subKeymaps
+  where
+    addSubKeymaps' allKeymaps []           _  = allKeymaps
+    addSubKeymaps' allKeymaps rootKeymaps  [] = allKeymaps ++ rootKeymaps
+    addSubKeymaps' allKeymaps (x@(_, rootKeymapDesc, _):xs) (y@(matchingDesc, subKeymaps):ys)
+      | rootKeymapDesc == matchingDesc = addSubKeymaps' (allKeymaps ++ [x] ++ subKeymaps) xs ys
+      | otherwise                      = addSubKeymaps' (allKeymaps ++ [x])               xs (y:ys)
 
 -- pretty format a keymap and its descriptive text
 ppKeymap (key, desc, level) allKeys allDesc = (ppKey allKeys key level, ppDesc allDesc desc)
