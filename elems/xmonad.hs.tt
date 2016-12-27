@@ -89,26 +89,32 @@ import qualified Graphics.X11.Xlib.Misc as X
 
 import XMonad
 
-import qualified XMonad.Actions.Search    as ASE
-import qualified XMonad.Actions.FloatSnap as AFS
-import qualified XMonad.Actions.Submap    as ASM
+import qualified XMonad.Actions.DwmPromote        as ADP
+import qualified XMonad.Actions.CycleRecentWS     as AWS
+import qualified XMonad.Actions.Commands          as ACMD
+import qualified XMonad.Actions.CopyWindow        as ACW
+import qualified XMonad.Actions.ConstrainedResize as ACR
+import qualified XMonad.Actions.FloatSnap         as AFS
+import qualified XMonad.Actions.PhysicalScreens   as APS
+import qualified XMonad.Actions.Search            as ASE
+import qualified XMonad.Actions.Submap            as ASM
 
 import qualified XMonad.Hooks.DynamicLog    as HDL
 import qualified XMonad.Hooks.EwmhDesktops  as HEWMH
 import qualified XMonad.Hooks.ICCCMFocus    as HICCCMF
 import qualified XMonad.Hooks.ManageDocks   as HMD
 import qualified XMonad.Hooks.ManageHelpers as HMH
-import qualified XMonad.Hooks.SetWMName     as HWMN
 import qualified XMonad.Hooks.Place         as HP
+import qualified XMonad.Hooks.SetWMName     as HWMN
 import qualified XMonad.Hooks.UrgencyHook   as HU
 
+import qualified XMonad.Layout.Decoration            as LD
 import qualified XMonad.Layout.MultiToggle           as LMT
 import qualified XMonad.Layout.MultiToggle.Instances as LMTI
-import qualified XMonad.Layout.Decoration            as LD
 import qualified XMonad.Layout.NoBorders             as LNB
+import qualified XMonad.Layout.PerWorkspace          as LPW
 import qualified XMonad.Layout.Reflect               as LR
 import qualified XMonad.Layout.Tabbed                as LT
-import qualified XMonad.Layout.PerWorkspace          as LPW
 import qualified XMonad.Layout.WorkspaceDir          as LWD
 
 import qualified XMonad.ManageHook as MH
@@ -131,7 +137,7 @@ import qualified XMonad.Util.EZConfig as EZ
 
 -- ───────────────────────────────────────────────────────────── xconfig •2• ──┐
 
-main = do myStatusBarHandle <- R.spawnPipe myStatusBarCmd
+main = do myStatusBarHandle <- R.spawnPipe statusBarCmd
           xmonad $ HU.withUrgencyHook HU.NoUrgencyHook
                  $ HEWMH.ewmh
                  -- TODO $ TB.pagerHints
@@ -185,7 +191,7 @@ myLayoutHook = LNB.smartBorders . HMD.avoidStruts
              $ LPW.onWorkspace (myWorkspaces !! 9) myComboLayouts
              $ myDefaultLayouts
   where
-    workspaceDir = "<%= local!(:workspace_dir) %>"
+    workspaceDir = "<%= File.expand_path local!(:workspace_dir) %>"
 
     -- Layout groups
     tabbedLayout = LT.tabbed LT.shrinkText $ LT.defaultTheme
@@ -220,13 +226,13 @@ myLayoutHook = LNB.smartBorders . HMD.avoidStruts
 -- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
 
 myWorkspaces = zipWith (++) workspaceIds
-             $ map (separator ++) workspaceNames
+             $ map (sep ++) workspaceNames
   where
     workspaceIds = [ (show workspaceIndex)  ++ delimiter
                    | workspaceIndex <- [1..]
                    ]
     delimiter = "•"
-    separator = ""
+    sep = ""
     workspaceNames = [ "ref"
                      , "wf"
                      , "wf"
@@ -241,27 +247,28 @@ myWorkspaces = zipWith (++) workspaceIds
 
 -- ───────────────────────────────────────────────────────── log hook •2.03• ──┤
 
-myLogHook h = HICCCMF.takeTopFocus >> HDL.dynamicLogWithPP (myStatusBarPP h)
+myLogHook h = do copies <- ACW.wsContainingCopies
+                 HICCCMF.takeTopFocus >> HDL.dynamicLogWithPP (statusPP h copies)
 
--- ──────────────────────────────────────────────────────── statusbar •2.04• ──┤
+statusBarCmd = "/usr/bin/xmobar"
 
-myStatusBarCmd = "/usr/bin/xmobar"
-
-myStatusBarPP h = HDL.defaultPP
-                { HDL.ppCurrent         = format currentColor currentSymbols
-                , HDL.ppVisible         = format visibleColor visibleSymbols
-                , HDL.ppHidden          = format hiddenColor  hiddenSymbols
-                , HDL.ppHiddenNoWindows = format emptyColor   emptySymbols
-                , HDL.ppUrgent          = format urgentColor  urgentSymbols
-                , HDL.ppLayout          = format layoutColor  layoutSymbols
-                                        . take 16 -- Maximum layout name (TODO to be computed automatically)
-                                        . (++ repeat ' ')
-                , HDL.ppSep    = "  "
-                , HDL.ppWsSep  = " "
-                , HDL.ppTitle  = take 0
-                , HDL.ppOutput = R.hPutStrLn h
-                }
+statusPP h copies = HDL.defaultPP
+                  { HDL.ppCurrent         = format currentColor currentSymbols
+                  , HDL.ppVisible         = format visibleColor visibleSymbols
+                  , HDL.ppHidden          = formatHidden copies
+                  , HDL.ppHiddenNoWindows = format emptyColor   emptySymbols
+                  , HDL.ppUrgent          = format urgentColor  urgentSymbols
+                  , HDL.ppLayout          = format layoutColor  layoutSymbols
+                                          . take 16 -- Maximum layout name (TODO to be computed automatically)
+                                          . (++ repeat ' ')
+                  , HDL.ppSep    = "  "
+                  , HDL.ppWsSep  = " "
+                  , HDL.ppTitle  = take 0
+                  , HDL.ppOutput = R.hPutStrLn h
+                  }
   where
+    formatHidden copies ws | (ws `elem` copies) = format hiddenWithCopiesColor hiddenSymbols ws
+                           | otherwise          = format hiddenColor           hiddenSymbols ws
     -- utility function: surround with symbols and apply colors
     format colorSpec symbolSpec = uncurry HDL.xmobarColor (mapT toHex colorSpec)
                                 . uncurry HDL.wrap symbolSpec
@@ -269,11 +276,12 @@ myStatusBarPP h = HDL.defaultPP
     currentColor   = (bgColor, green colors)
     currentSymbols = (" ◄ ", " ► ")
 
-    visibleColor   = (bgColor, yellow colors)
+    visibleColor   = (bgColor, orange colors)
     visibleSymbols = (" |", "| ")
 
-    hiddenColor   = (bgColor, cyan colors)
-    hiddenSymbols = (" ⟨ ", " ⟩ ")
+    hiddenWithCopiesColor = (bgColor, yellow colors)
+    hiddenColor           = (bgColor, cyan colors)
+    hiddenSymbols         = (" ⟨ ", " ⟩ ")
 
     emptyColor   = (bgColor, grey colors)
     emptySymbols = (" ∅ ", " ∅ ")
@@ -319,6 +327,7 @@ basicManageHook = composeAll . concat $
     floats = [ XWindowClass "Pavucontrol"
              , XWindowClass "copyq"
              , XWindowClass "Xmessage"
+             , XWindowClass "TeamViewer.exe"
              , XWindowTitle "Save As..."
              ]
 
@@ -372,8 +381,8 @@ keymaps = [ -- window management: change focus
             )
             -- window management: swap
           , ( (metaMask, xK_Return)
-            , windows SS.swapMaster
-            , "swap the focused window and the master window"
+            , ADP.dwmpromote
+            , "swap focused window with the master window"
             )
           , ( (metaMask .|. shiftMask, xK_j)
             , windows SS.swapDown
@@ -395,6 +404,11 @@ keymaps = [ -- window management: change focus
           , ( (metaMask, xK_l)
             , sendMessage Expand
             , "expand the master area"
+            )
+            -- window management: cycle through windows
+          , ( (metaMask .|. controlMask, xK_Tab)
+            , AWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
+            , "cycle through most recent workspaces"
             )
             -- window management: float windows support
           , ( (metaMask .|. altMask, xK_r)
@@ -428,7 +442,11 @@ keymaps = [ -- window management: change focus
         --    , setLayout myLayoutHook
         --    , "reset the layouts on the current workspace to default"
         --    )
-            -- Launch
+            -- launch
+          , ( (metaMask .|. controlMask, xK_p)
+            , xmonadCommands >>= ACMD.runCommand
+            , "run an internal xmonad command"
+            )
           , ( (metaMask .|. shiftMask, xK_Return)
             , spawn myTerminal
             , "open terminal"
@@ -438,8 +456,12 @@ keymaps = [ -- window management: change focus
             , "open program launcher"
             )
           , ( (metaMask .|. shiftMask, xK_c)
-            , kill
-            , "close the focused window"
+            , ACW.kill1
+            , "close focused window (in the current workspace)"
+            )
+          , ( (metaMask .|. altMask .|. shiftMask, xK_c)
+            , ACW.killAllOtherCopies
+            , "close all other copies of focused window"
             )
             -- scratchpads
           , ( (metaMask, xK_a)
@@ -475,6 +497,38 @@ keymaps = [ -- window management: change focus
             , "restart xmonad"
             )
           ]
+          ++ -- switch/move window to previous/next screen
+          [ ( (metaMask, xK_w)
+            , APS.onPrevNeighbour SS.view
+            , "switch to the previous screen"
+            )
+          , ( (metaMask, xK_e)
+            , APS.onNextNeighbour SS.view
+            , "switch to the next screen"
+            )
+          , ( (metaMask .|. shiftMask, xK_w)
+            , APS.onPrevNeighbour SS.shift
+            , "move focused window to the previous screen"
+            )
+          , ( (metaMask .|. shiftMask, xK_e)
+            , APS.onNextNeighbour SS.shift
+            , "move focused window to the next screen"
+            )
+          ]
+          ++ -- switch screens
+          [ ( (metaMask .|. altMask, key)
+            , screenWorkspace screenNum >>= flip whenJust (windows . SS.view)
+            , "switch to screen nr." ++ show screenNum
+            )
+          | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
+          ]
+          ++ -- move focused window to another screen
+          [ ( (metaMask .|. altMask .|. shiftMask, key)
+            , screenWorkspace screenNum >>= flip whenJust (windows . SS.shift)
+            , "switch to screen nr." ++ show screenNum
+            )
+          | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
+          ]
           ++ -- switch workspaces
           [ ( (metaMask, key)
             , windows $ SS.greedyView workspace
@@ -482,34 +536,35 @@ keymaps = [ -- window management: change focus
             )
           | (workspace, key, num) <- zip3 myWorkspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
           ]
-          ++ -- move window to another workspace
+          ++ -- move focused window to another workspace
           [ ( (metaMask .|. shiftMask, key)
             , windows $ SS.shift workspace
-            , "move window to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
+            , "move focused window to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
             )
           | (workspace, key, num) <- zip3 myWorkspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
           ]
---          ++
---          -- mod-{w,e,r} %! Switch to physical/Xinerama screens 1, 2, or 3
---          -- mod-shift-{w,e,r} %! Move client to screen 1, 2, or 3
---          [((m .|. modMask, key), screenWorkspace sc >>= flip whenJust (windows . f))
---              | (key, sc) <- zip [xK_w, xK_e, xK_r] [0..]
---              , (f, m) <- [(W.view, 0), (W.shift, shiftMask)]]
+          ++ -- copy focused window to another workspace
+          [ ( (metaMask .|. controlMask .|. shiftMask, key)
+            , windows $ ACW.copy workspace
+            , "copy focused window to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
+            )
+          | (workspace, key, num) <- zip3 myWorkspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
+          ]
   where
     programLauncher = "dmenu_run"
 
     recompileXMonad = "if type xmonad; then xmonad --recompile && xmonad --restart; else xmessage xmonad not in \\$PATH: \"$PATH\"; fi"
 
-help = L.intercalate "\n" (header ++ [ppKey ++ kdSeparator ++ ppDesc | (ppKey, ppDesc) <- ppKeymaps])
+help = L.intercalate "\n" (header ++ [ppKey ++ kdSep ++ ppDesc | (ppKey, ppDesc) <- ppKeymaps])
   where
     header = [title
-             , concat $ replicate (length title) [titleSeparator]
+             , concat $ replicate (length title) [titleSep]
              , ""
              ]
     title = "xmonad keymaps"
-    titleSeparator = '─'
+    titleSep = '─'
 
-    kdSeparator = " : "
+    kdSep = " : "
 
     ppKeymaps = [ppKeymap keymap allKeys allDescs | keymap <- allKeymaps]
 
@@ -618,6 +673,10 @@ searchKeymaps = [ ( (0, xK_a)
                   )
                 ]
 
+xmonadCommands :: X [(String, X ())]
+xmonadCommands = ACMD.defaultCommands
+
+-- TODO
 -- workspacePromptKeymap =
 --  , ((0, xK_w), PW.workspacePrompt xpConfig (windows . SS.greedyView))
 --  , ("M-a M-w", PW.workspacePrompt xpConfig (windows . SS.shift))
@@ -627,29 +686,29 @@ searchKeymaps = [ ( (0, xK_a)
 
 -- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
 
-mouseMaps = [ ( (mod4Mask, button1)
-              , moveWindowAction
+mouseMaps = [ ( (metaMask, button1)
+              , \w -> focus w >>
+                      mouseMoveWindow w >>
+                      AFS.snapMagicMove (Just 50) (Just 50) w
               , "Move window"
               )
-            , ( (mod4Mask .|. shiftMask, button1)
-              , expandWindowAction
+            , ( (metaMask .|. shiftMask, button1)
+              , \w -> focus w >>
+                      mouseMoveWindow w >>
+                      AFS.snapMagicResize [AFS.L, AFS.R, AFS.U, AFS.D]
+                                          (Just 50) (Just 50) w
               , "Expand window"
               )
-            , ( (mod4Mask, button3)
-              , resizeWindowAction
-              , "Resize window"
+            , ( (metaMask, button3)
+              , \w -> focus w >>
+                      mouseResizeWindow w >>
+                      AFS.snapMagicResize [AFS.R, AFS.D] (Just 50) (Just 50) w
+              , "resize window"
               )
+            , ( (metaMask .|. altMask, button3)
+              , \w -> focus w >> ACR.mouseResizeWindow w True
+              , "resize window (keeping aspect ratio)")
             ]
-  where
-    moveWindowAction = \w -> focus w >>
-                             mouseMoveWindow w >>
-                             AFS.snapMagicMove (Just 50) (Just 50) w
-    expandWindowAction = \w -> focus w >>
-                               mouseMoveWindow w >>
-                               AFS.snapMagicResize [AFS.L, AFS.R, AFS.U, AFS.D] (Just 50) (Just 50) w
-    resizeWindowAction = \w -> focus w >>
-                               mouseResizeWindow w >>
-                               AFS.snapMagicResize [AFS.R, AFS.D] (Just 50) (Just 50) w
 
 -- ───────────────────────────────────────────────────────────── misc •2.11• ──┤
 
