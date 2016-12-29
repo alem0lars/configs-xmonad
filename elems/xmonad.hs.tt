@@ -90,7 +90,7 @@ import qualified Graphics.X11.Xlib.Misc as X
 import XMonad
 
 import qualified XMonad.Actions.DwmPromote        as ADP
-import qualified XMonad.Actions.CycleRecentWS     as AWS
+import qualified XMonad.Actions.CycleRecentWS     as ACRWS
 import qualified XMonad.Actions.Commands          as ACMD
 import qualified XMonad.Actions.CopyWindow        as ACW
 import qualified XMonad.Actions.ConstrainedResize as ACR
@@ -382,15 +382,15 @@ keymaps = [ -- window management: change focus
             -- window management: swap
           , ( (metaMask, xK_Return)
             , ADP.dwmpromote
-            , "swap focused window with the master window"
+            , "swap focused window with master window"
             )
           , ( (metaMask .|. shiftMask, xK_j)
             , windows SS.swapDown
-            , "swap the focused window with the next window"
+            , "swap focused window with next window"
             )
           , ( (metaMask .|. shiftMask, xK_k)
             , windows SS.swapUp
-            , "swap the focused window with the previous window"
+            , "swap focused window with previous window"
             )
             -- window management: resize
           , ( (metaMask, xK_n)
@@ -405,9 +405,9 @@ keymaps = [ -- window management: change focus
             , sendMessage Expand
             , "expand the master area"
             )
-            -- window management: cycle through windows
+            -- window management: cycle through workspaces
           , ( (metaMask .|. controlMask, xK_Tab)
-            , AWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
+            , ACRWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
             , "cycle through most recent workspaces"
             )
             -- window management: float windows support
@@ -418,6 +418,38 @@ keymaps = [ -- window management: change focus
           , ( (metaMask, xK_t)
             , withFocused $ windows . SS.sink
             , "push window back into tiling"
+            )
+          , ( (metaMask, xK_Left)
+            , withFocused $ AFS.snapMove AFS.L Nothing
+            , "snap focused window to left border"
+            )
+          , ( (metaMask, xK_Right)
+            , withFocused $ AFS.snapMove AFS.R Nothing
+            , "snap focused window to right border"
+            )
+          , ( (metaMask, xK_Up)
+            , withFocused $ AFS.snapMove AFS.U Nothing
+            , "snap focused window to top border"
+            )
+          , ( (metaMask, xK_Down)
+            , withFocused $ AFS.snapMove AFS.D Nothing
+            , "snap focused window to bottom border"
+            )
+          , ( (metaMask .|. shiftMask, xK_Left)
+            , withFocused $ AFS.snapShrink AFS.R Nothing
+            , "expand focused window filling up to the left border"
+            )
+          , ( (metaMask .|. shiftMask, xK_Right)
+            , withFocused $ AFS.snapGrow AFS.R Nothing
+            , "expand focused window filling up to the right border"
+            )
+          , ( (metaMask .|. shiftMask, xK_Up)
+            , withFocused $ AFS.snapShrink AFS.D Nothing
+            , "expand focused window filling up to the top border"
+            )
+          , ( (metaMask .|. shiftMask, xK_Down)
+            , withFocused $ AFS.snapGrow AFS.D Nothing
+            , "expand focused window filling up to the bottom border"
             )
             -- window management: work with master/slave windows
           , ( (metaMask, xK_m)
@@ -500,32 +532,32 @@ keymaps = [ -- window management: change focus
           ++ -- switch/move window to previous/next screen
           [ ( (metaMask, xK_w)
             , APS.onPrevNeighbour SS.view
-            , "switch to the previous screen"
+            , "switch to previous screen"
             )
           , ( (metaMask, xK_e)
             , APS.onNextNeighbour SS.view
-            , "switch to the next screen"
+            , "switch to next screen"
             )
           , ( (metaMask .|. shiftMask, xK_w)
             , APS.onPrevNeighbour SS.shift
-            , "move focused window to the previous screen"
+            , "move focused window to previous screen"
             )
           , ( (metaMask .|. shiftMask, xK_e)
             , APS.onNextNeighbour SS.shift
-            , "move focused window to the next screen"
+            , "move focused window to next screen"
             )
           ]
           ++ -- switch screens
           [ ( (metaMask .|. altMask, key)
-            , screenWorkspace screenNum >>= flip whenJust (windows . SS.view)
+            , APS.viewScreen screenNum
             , "switch to screen nr." ++ show screenNum
             )
           | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
           ]
           ++ -- move focused window to another screen
           [ ( (metaMask .|. altMask .|. shiftMask, key)
-            , screenWorkspace screenNum >>= flip whenJust (windows . SS.shift)
-            , "switch to screen nr." ++ show screenNum
+            , APS.sendToScreen screenNum
+            , "move focused window to screen nr." ++ show screenNum
             )
           | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
           ]
@@ -687,28 +719,36 @@ xmonadCommands = ACMD.defaultCommands
 -- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
 
 mouseMaps = [ ( (metaMask, button1)
-              , \w -> focus w >>
-                      mouseMoveWindow w >>
-                      AFS.snapMagicMove (Just 50) (Just 50) w
-              , "Move window"
+              , \w -> focus w
+                   >> mouseMoveWindow w
+                   >> AFS.ifClick (snap w)
+              , "move window (snapping to borders)"
               )
             , ( (metaMask .|. shiftMask, button1)
-              , \w -> focus w >>
-                      mouseMoveWindow w >>
-                      AFS.snapMagicResize [AFS.L, AFS.R, AFS.U, AFS.D]
-                                          (Just 50) (Just 50) w
-              , "Expand window"
+              , \w -> focus w
+                   >> mouseMoveWindow w
+                   >> AFS.ifClick (expandOnMove w)
+              , "move window (expanding to borders)"
               )
             , ( (metaMask, button3)
-              , \w -> focus w >>
-                      mouseResizeWindow w >>
-                      AFS.snapMagicResize [AFS.R, AFS.D] (Just 50) (Just 50) w
-              , "resize window"
+              , \w -> focus w
+                   >> mouseResizeWindow w
+                   >> AFS.ifClick (expandOnResize w)
+              , "resize window (expanding to borders)"
               )
             , ( (metaMask .|. altMask, button3)
               , \w -> focus w >> ACR.mouseResizeWindow w True
               , "resize window (keeping aspect ratio)")
             ]
+  where
+    snap           w = AFS.snapMagicMove                distance distance w
+    expandOnMove   w = AFS.snapMagicResize allBorders   distance distance w
+    expandOnResize w = AFS.snapMagicResize resizeCorner distance distance w
+
+    allBorders   = [AFS.L, AFS.R, AFS.U, AFS.D]
+    resizeCorner = [AFS.R, AFS.D]
+
+    distance = (Just 128)
 
 -- ───────────────────────────────────────────────────────────── misc •2.11• ──┤
 
