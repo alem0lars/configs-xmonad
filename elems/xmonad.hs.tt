@@ -85,24 +85,46 @@ import Data.Bits ((.&.), bitSize, complement)
 import qualified Data.Map  as M
 import qualified Data.List as L
 
-import qualified Graphics.X11.Xlib.Misc as X
+import XMonad ( xmonad
+              , X
+              , (|||)
+              , (.|.)
+              , (<+>)
+              , (-->)
+              , (=?)
+              , KeyMask, KeySym -- keymap data types
+              , xK_a, xK_b, xK_c, xK_d, xK_e, xK_f, xK_g, xK_h, xK_i
+              , xK_j, xK_k, xK_l, xK_m, xK_n, xK_o, xK_p, xK_q, xK_r, xK_s
+              , xK_t, xK_u, xK_v, xK_w, xK_x, xK_y, xK_z
+              , xK_1, xK_2, xK_3, xK_4, xK_5, xK_6, xK_7, xK_8, xK_9, xK_0
+              , xK_Tab, xK_Return, xK_grave, xK_comma, xK_space, xK_period
+              , xK_slash, xK_Alt_L
+              , xK_Left, xK_Right, xK_Up, xK_Down
+              , mod1Mask, mod2Mask, mod3Mask, mod4Mask, mod5Mask
+              , shiftMask, controlMask, lockMask
+              , button1, button2, button3 -- buttons
+              )
+import qualified XMonad.Core as XMonad
+import qualified XMonad      as XM
 
-import XMonad
+import qualified XMonad.Actions.UpdatePointer      as UpdatePointer
+import qualified XMonad.Actions.DwmPromote         as Promote
+import qualified XMonad.Actions.CycleRecentWS      as CycleRecentWS
+import qualified XMonad.Actions.Commands           as Commands
+import qualified XMonad.Actions.CopyWindow         as CopyWindow
+import qualified XMonad.Actions.ConstrainedResize  as ConstrResize
+import qualified XMonad.Actions.FloatSnap          as FloatSnap
+import qualified XMonad.Actions.PhysicalScreens    as PhyScreens
+import qualified XMonad.Actions.Search             as Search
+import qualified XMonad.Actions.Submap             as Submap
+import qualified XMonad.Actions.FlexibleManipulate as FlexM
+import qualified XMonad.Actions.FlexibleResize     as FlexR
+import qualified XMonad.Actions.RotSlaves          as RotSlaves
 
-import qualified XMonad.Actions.DwmPromote        as ADP
-import qualified XMonad.Actions.CycleRecentWS     as ACRWS
-import qualified XMonad.Actions.Commands          as ACMD
-import qualified XMonad.Actions.CopyWindow        as ACW
-import qualified XMonad.Actions.ConstrainedResize as ACR
-import qualified XMonad.Actions.FloatSnap         as AFS
-import qualified XMonad.Actions.PhysicalScreens   as APS
-import qualified XMonad.Actions.Search            as ASE
-import qualified XMonad.Actions.Submap            as ASM
-
-import qualified XMonad.Hooks.DynamicLog    as HDL
-import qualified XMonad.Hooks.EwmhDesktops  as HEWMH
-import qualified XMonad.Hooks.ICCCMFocus    as HICCCMF
-import qualified XMonad.Hooks.ManageDocks   as HMD
+import qualified XMonad.Hooks.DynamicLog    as DynLog
+import qualified XMonad.Hooks.EwmhDesktops  as EWMH
+import qualified XMonad.Hooks.ICCCMFocus    as ICCCMFocus
+import qualified XMonad.Hooks.ManageDocks   as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers as HMH
 import qualified XMonad.Hooks.Place         as HP
 import qualified XMonad.Hooks.SetWMName     as HWMN
@@ -139,11 +161,11 @@ import qualified XMonad.Util.EZConfig as EZ
 
 main = do myStatusBarHandle <- R.spawnPipe statusBarCmd
           xmonad $ HU.withUrgencyHook HU.NoUrgencyHook
-                 $ HEWMH.ewmh
+                 $ EWMH.ewmh
                  -- TODO $ TB.pagerHints
                  $ xConfig myStatusBarHandle
   where
-    xConfig myStatusBarHandle = defaultConfig
+    xConfig myStatusBarHandle = XM.defaultConfig
       { XMonad.layoutHook         = myLayoutHook
       , XMonad.manageHook         = myManageHook
       , XMonad.handleEventHook    = myHandleEventHook
@@ -161,18 +183,18 @@ main = do myStatusBarHandle <- R.spawnPipe statusBarCmd
       , XMonad.mouseBindings      = mousemapConfig
       }
 
-    mousemapConfig = \conf@(XConfig {XMonad.modMask = modMask}) -> M.fromList
+    mousemapConfig = \conf@(XM.XConfig {XMonad.modMask = modMask}) -> M.fromList
       [ (key, action)
       | (key, action, desc) <- mouseMaps
       ]
-    keymapConfig = \conf@(XConfig {XMonad.modMask = modMask}) -> M.fromList
+    keymapConfig = \conf@(XM.XConfig {XMonad.modMask = modMask}) -> M.fromList
       [ (key, action)
       | (key, action, _) <- keymaps
       ]
 
 -- ────────────────────────────────────────────────────────── layouts •2.01• ──┤
 
-myLayoutHook = LNB.smartBorders . HMD.avoidStruts
+myLayoutHook = LNB.smartBorders . ManageDocks.avoidStruts
              $ LWD.workspaceDir workspaceDir
              $ LMT.mkToggle1 LMTI.NBFULL    -- switch to full with no borders
              $ LMT.mkToggle1 LR.REFLECTX    -- reflect x-axis
@@ -214,14 +236,14 @@ myLayoutHook = LNB.smartBorders . HMD.avoidStruts
     myDefaultLayouts   = myWflowLayouts
 
     -- Layout definitions
-    myCrossLayout     = Full -- TODO simpleCross
-    myFullLayout      = Full -- TODO Full
-    myAccordionLayout = Full -- TODO Accordion
-    myGridLayout      = Full -- TODO Grid
-    mySpiralLayout    = Full -- TODO spiral (1/2)
-    myMosaicLayout    = Full -- TODO mosaic 2 [3, 2]
-    myFloatLayout     = Full -- TODO simpleFloat
-    myOneBigLayout    = Full -- TODO OneBig 0.6 0.74
+    myCrossLayout     = XM.Full -- TODO simpleCross
+    myFullLayout      = XM.Full -- TODO Full
+    myAccordionLayout = XM.Full -- TODO Accordion
+    myGridLayout      = XM.Full -- TODO Grid
+    mySpiralLayout    = XM.Full -- TODO spiral (1/2)
+    myMosaicLayout    = XM.Full -- TODO mosaic 2 [3, 2]
+    myFloatLayout     = XM.Full -- TODO simpleFloat
+    myOneBigLayout    = XM.Full -- TODO OneBig 0.6 0.74
 
 -- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
 
@@ -247,31 +269,33 @@ myWorkspaces = zipWith (++) workspaceIds
 
 -- ───────────────────────────────────────────────────────── log hook •2.03• ──┤
 
-myLogHook h = do copies <- ACW.wsContainingCopies
-                 HICCCMF.takeTopFocus >> HDL.dynamicLogWithPP (statusPP h copies)
+myLogHook h = do copies <- CopyWindow.wsContainingCopies
+                 ICCCMFocus.takeTopFocus
+                 DynLog.dynamicLogWithPP (statusPP h copies)
+                 UpdatePointer.updatePointer (0.5, 0.5) (0, 0)
 
 statusBarCmd = "/usr/bin/xmobar"
 
-statusPP h copies = HDL.defaultPP
-                  { HDL.ppCurrent         = format currentColor currentSymbols
-                  , HDL.ppVisible         = format visibleColor visibleSymbols
-                  , HDL.ppHidden          = formatHidden copies
-                  , HDL.ppHiddenNoWindows = format emptyColor   emptySymbols
-                  , HDL.ppUrgent          = format urgentColor  urgentSymbols
-                  , HDL.ppLayout          = format layoutColor  layoutSymbols
-                                          . take 16 -- Maximum layout name (TODO to be computed automatically)
+statusPP h copies = DynLog.defaultPP
+                  { DynLog.ppCurrent         = format currentColor currentSymbols
+                  , DynLog.ppVisible         = format visibleColor visibleSymbols
+                  , DynLog.ppHidden          = formatHidden copies
+                  , DynLog.ppHiddenNoWindows = format emptyColor   emptySymbols
+                  , DynLog.ppUrgent          = format urgentColor  urgentSymbols
+                  , DynLog.ppLayout          = format layoutColor  layoutSymbols
+                                          . take 16 -- maximum layout name (TODO to be computed automatically)
                                           . (++ repeat ' ')
-                  , HDL.ppSep    = "  "
-                  , HDL.ppWsSep  = " "
-                  , HDL.ppTitle  = take 0
-                  , HDL.ppOutput = R.hPutStrLn h
+                  , DynLog.ppSep    = "  "
+                  , DynLog.ppWsSep  = " "
+                  , DynLog.ppTitle  = take 0
+                  , DynLog.ppOutput = R.hPutStrLn h
                   }
   where
     formatHidden copies ws | (ws `elem` copies) = format hiddenWithCopiesColor hiddenSymbols ws
                            | otherwise          = format hiddenColor           hiddenSymbols ws
     -- utility function: surround with symbols and apply colors
-    format colorSpec symbolSpec = uncurry HDL.xmobarColor (mapT toHex colorSpec)
-                                . uncurry HDL.wrap symbolSpec
+    format colorSpec symbolSpec = uncurry DynLog.xmobarColor (mapT toHex colorSpec)
+                                . uncurry DynLog.wrap symbolSpec
 
     currentColor   = (bgColor, green colors)
     currentSymbols = (" ◄ ", " ► ")
@@ -294,35 +318,35 @@ statusPP h copies = HDL.defaultPP
 
 -- ───────────────────────────────────────────────────── startup hook •2.05• ──┤
 
-myStartupHook = HEWMH.ewmhDesktopsStartup >> HWMN.setWMName "LG3D"
+myStartupHook = EWMH.ewmhDesktopsStartup >> HWMN.setWMName "LG3D"
 
 -- ──────────────────────────────────────────────── handle event hook •2.06• ──┤
 
-myHandleEventHook =  handleEventHook defaultConfig
-                 <+> HMD.docksEventHook
-                 <+> HEWMH.ewmhDesktopsEventHook
-                 <+> HEWMH.fullscreenEventHook
+myHandleEventHook =  XM.handleEventHook XM.defaultConfig
+                 <+> ManageDocks.docksEventHook
+                 <+> EWMH.ewmhDesktopsEventHook
+                 <+> EWMH.fullscreenEventHook
 
 -- ────────────────────────────────────────────────────── manage hook •2.07• ──┤
 
 myManageHook =  HP.placeHook floatingWindowPlacement
             <+> basicManageHook
-            <+> manageHook defaultConfig
+            <+> XM.manageHook XM.defaultConfig
 
 floatingWindowPlacement = HP.withGaps (16, 0, 16, 0)
                         $ HP.smart (0.5, 0.5)
 
-basicManageHook = composeAll . concat $
-                [ [HMD.manageDocks]
+basicManageHook = MH.composeAll . concat $
+                [ [ManageDocks.manageDocks]
                 , [SP.namedScratchpadManageHook scratchpads]
                 , [HMH.isFullscreen --> applyFullFloat]
                 , [HMH.isDialog --> applyFloat]
                 , [checkXWindowQuery q --> applyFloat | q      <- floats]
-                , [checkXWindowQuery q --> doShift w  | (q, w) <- shifts]
+                , [checkXWindowQuery q --> MH.doShift w  | (q, w) <- shifts]
                 ]
   where
     applyFullFloat = HMH.doFullFloat
-    applyFloat     = doFloat
+    applyFloat     = MH.doFloat
 
     floats = [ XWindowClass "Pavucontrol"
              , XWindowClass "copyq"
@@ -339,22 +363,21 @@ basicManageHook = composeAll . concat $
 
 scratchpadSize = SS.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)
 
-scratchpadFloat = SP.customFloating scratchpadSize
-
-scratchpads = [ SP.NS "term" myTerminal (title =? "term") scratchpadFloat
-            , SP.NS "top" (runCmd "htop") (title =? "htop") scratchpadFloat
-            <% if has_feature? :python %>
-            , SP.NS "ipython" (runCmd "ipython") (title =? "ipython") scratchpadFloat
-            <% end %>
-            <% if has_feature? :ruby %>
-            , SP.NS "irb" (runCmd "irb") (title =? "irb") scratchpadFloat
-            <% end %>
-            <% if has_feature? :haskell %>
-            , SP.NS "ghci" (runCmd "ghci") (title =? "ghci") scratchpadFloat
-            <% end %>
-            ]
+scratchpads = [ SP.NS "term" myTerminal (MH.title =? "term") size
+              , SP.NS "top" (runCmd "htop") (MH.title =? "htop") size
+              <% if has_feature? :python %>
+              , SP.NS "ipython" (runCmd "ipython") (MH.title =? "ipython") size
+              <% end %>
+              <% if has_feature? :ruby %>
+              , SP.NS "irb" (runCmd "irb") (MH.title =? "irb") size
+              <% end %>
+              <% if has_feature? :haskell %>
+              , SP.NS "ghci" (runCmd "ghci") (MH.title =? "ghci") size
+              <% end %>
+              ]
   where
     runCmd cmd = "<%= local! :term_run_cmd %> " ++ cmd
+    size = SP.customFloating scratchpadSize
 
 -- ───────────────────────────────────────────────────── key bindings •2.09• ──┤
 
@@ -362,111 +385,119 @@ metaMask = mod4Mask
 altMask   = mod1Mask
 
 keymaps :: [((KeyMask, KeySym), X (), String)]
-keymaps = [ -- window management: change focus
+keymaps = [ -- window management: change XM.focus
             ( (metaMask, xK_Tab)
-            , windows SS.focusDown
-            , "move focus to the next window"
+            , XM.windows SS.focusDown
+            , "move XM.focus to the next window"
             )
           , ( (metaMask .|. shiftMask, xK_Tab)
-            , windows SS.focusUp
-            , "move focus to the previous window"
+            , XM.windows SS.focusUp
+            , "move XM.focus to the previous window"
             )
           , ( (metaMask, xK_j)
-            , windows SS.focusDown
-            , "move focus to the next window"
+            , XM.windows SS.focusDown
+            , "move XM.focus to the next window"
             )
           , ( (metaMask, xK_k)
-            , windows SS.focusUp
-            , "move focus to the previous window"
+            , XM.windows SS.focusUp
+            , "move XM.focus to the previous window"
             )
             -- window management: swap
           , ( (metaMask, xK_Return)
-            , ADP.dwmpromote
+            , Promote.dwmpromote
             , "swap focused window with master window"
             )
           , ( (metaMask .|. shiftMask, xK_j)
-            , windows SS.swapDown
+            , XM.windows SS.swapDown
             , "swap focused window with next window"
             )
           , ( (metaMask .|. shiftMask, xK_k)
-            , windows SS.swapUp
+            , XM.windows SS.swapUp
             , "swap focused window with previous window"
+            )
+          , ( (metaMask .|. altMask .|. shiftMask, xK_j)
+            , RotSlaves.rotSlavesUp
+            , "rotate (up) the XM.windows in the current stack, excluding the master window"
+            )
+          , ( (metaMask .|. altMask .|. shiftMask, xK_k)
+            , RotSlaves.rotSlavesDown
+            , "rotate (down) the XM.windows in the current stack, excluding the master window"
             )
             -- window management: resize
           , ( (metaMask, xK_n)
-            , refresh
-            , "resize viewed windows to the correct size"
+            , XM.refresh
+            , "resize viewed XM.windows to the correct size"
             )
           , ( (metaMask, xK_h)
-            , sendMessage Shrink
+            , XM.sendMessage XM.Shrink
             , "shrink the master area"
             )
           , ( (metaMask, xK_l)
-            , sendMessage Expand
+            , XM.sendMessage XM.Expand
             , "expand the master area"
             )
             -- window management: cycle through workspaces
           , ( (metaMask .|. controlMask, xK_Tab)
-            , ACRWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
+            , CycleRecentWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
             , "cycle through most recent workspaces"
             )
-            -- window management: float windows support
+            -- window management: float XM.windows support
           , ( (metaMask .|. altMask, xK_r)
             , HP.placeFocused floatingWindowPlacement
             , "manually reposition focused floating window"
             )
           , ( (metaMask, xK_t)
-            , withFocused $ windows . SS.sink
+            , XM.withFocused $ XM.windows . SS.sink
             , "push window back into tiling"
             )
           , ( (metaMask, xK_Left)
-            , withFocused $ AFS.snapMove AFS.L Nothing
+            , XM.withFocused $ FloatSnap.snapMove FloatSnap.L Nothing
             , "snap focused window to left border"
             )
           , ( (metaMask, xK_Right)
-            , withFocused $ AFS.snapMove AFS.R Nothing
+            , XM.withFocused $ FloatSnap.snapMove FloatSnap.R Nothing
             , "snap focused window to right border"
             )
           , ( (metaMask, xK_Up)
-            , withFocused $ AFS.snapMove AFS.U Nothing
+            , XM.withFocused $ FloatSnap.snapMove FloatSnap.U Nothing
             , "snap focused window to top border"
             )
           , ( (metaMask, xK_Down)
-            , withFocused $ AFS.snapMove AFS.D Nothing
+            , XM.withFocused $ FloatSnap.snapMove FloatSnap.D Nothing
             , "snap focused window to bottom border"
             )
           , ( (metaMask .|. shiftMask, xK_Left)
-            , withFocused $ AFS.snapShrink AFS.R Nothing
+            , XM.withFocused $ FloatSnap.snapShrink FloatSnap.R Nothing
             , "expand focused window filling up to the left border"
             )
           , ( (metaMask .|. shiftMask, xK_Right)
-            , withFocused $ AFS.snapGrow AFS.R Nothing
+            , XM.withFocused $ FloatSnap.snapGrow FloatSnap.R Nothing
             , "expand focused window filling up to the right border"
             )
           , ( (metaMask .|. shiftMask, xK_Up)
-            , withFocused $ AFS.snapShrink AFS.D Nothing
+            , XM.withFocused $ FloatSnap.snapShrink FloatSnap.D Nothing
             , "expand focused window filling up to the top border"
             )
           , ( (metaMask .|. shiftMask, xK_Down)
-            , withFocused $ AFS.snapGrow AFS.D Nothing
+            , XM.withFocused $ FloatSnap.snapGrow FloatSnap.D Nothing
             , "expand focused window filling up to the bottom border"
             )
-            -- window management: work with master/slave windows
+            -- window management: work with master/slave XM.windows
           , ( (metaMask, xK_m)
-            , windows SS.focusMaster
-            , "move focus to the master window"
+            , XM.windows SS.focusMaster
+            , "move XM.focus to the master window"
             )
           , ( (metaMask, xK_comma)
-            , sendMessage (IncMasterN 1)
-            , "increment the number of windows in the master area"
+            , XM.sendMessage (XM.IncMasterN 1)
+            , "increment the number of XM.windows in the master area"
             )
           , ( (metaMask, xK_period)
-            , sendMessage (IncMasterN (-1))
-            , "deincrement the number of windows in the master area"
+            , XM.sendMessage (XM.IncMasterN (-1))
+            , "deincrement the number of XM.windows in the master area"
             )
             -- layout
           , ( (metaMask, xK_space)
-            , sendMessage NextLayout
+            , XM.sendMessage XM.NextLayout
             , "rotate through the available layout algorithms"
             )
         -- TODO doesn't work
@@ -476,108 +507,108 @@ keymaps = [ -- window management: change focus
         --    )
             -- launch
           , ( (metaMask .|. controlMask, xK_p)
-            , xmonadCommands >>= ACMD.runCommand
+            , xmonadCommands >>= Commands.runCommand
             , "run an internal xmonad command"
             )
           , ( (metaMask .|. shiftMask, xK_Return)
-            , spawn myTerminal
+            , XM.spawn myTerminal
             , "open terminal"
             )
           , ( (metaMask, xK_p)
-            , spawn programLauncher
+            , XM.spawn programLauncher
             , "open program launcher"
             )
           , ( (metaMask .|. shiftMask, xK_c)
-            , ACW.kill1
+            , CopyWindow.kill1
             , "close focused window (in the current workspace)"
             )
           , ( (metaMask .|. altMask .|. shiftMask, xK_c)
-            , ACW.killAllOtherCopies
+            , CopyWindow.killAllOtherCopies
             , "close all other copies of focused window"
             )
             -- scratchpads
           , ( (metaMask, xK_a)
-            , ASM.submap . M.fromList $ [ (kb, action)
-                                        | (kb, action, _) <- scratchpadsKeymaps]
+            , Submap.submap . M.fromList $ [ (kb, action)
+                                           | (kb, action, _) <- scratchpadsKeymaps]
             , "scratchpads"
             )
             -- search
           , ( (metaMask, xK_s)
-            , ASM.submap $ (M.fromList [ (kb, ASE.promptSearch P.defaultXPConfig action)
-                                       | (kb, action, _) <- searchKeymaps
-                                       ])
+            , Submap.submap $ M.fromList [ (kb, Search.promptSearch P.defaultXPConfig action)
+                                         | (kb, action, _) <- searchKeymaps
+                                         ]
             , "search prompt"
             )
           , ( (metaMask .|. shiftMask, xK_s)
-            , ASM.submap $ (M.fromList [ (kb, ASE.selectSearch action)
-                                       | (kb, action, _) <- searchKeymaps
-                                       ])
+            , Submap.submap $ M.fromList [ (kb, Search.selectSearch action)
+                                         | (kb, action, _) <- searchKeymaps
+                                         ]
             , "search from selection"
             )
             -- help
           , ( (metaMask .|. shiftMask, xK_slash)
-            , spawn $ xmessage help
+            , XM.spawn $ xmessage help
             , "show available bindings"
             )
             -- quit / restart
           , ( (metaMask .|. shiftMask, xK_q)
-            , io $ exitWith ExitSuccess
+            , XM.io $ exitWith ExitSuccess
             , "quit xmonad"
             )
           , ( (metaMask, xK_q)
-            , spawn recompileXMonad
+            , XM.spawn recompileXMonad
             , "restart xmonad"
             )
           ]
           ++ -- switch/move window to previous/next screen
           [ ( (metaMask, xK_w)
-            , APS.onPrevNeighbour SS.view
+            , PhyScreens.onPrevNeighbour SS.view
             , "switch to previous screen"
             )
           , ( (metaMask, xK_e)
-            , APS.onNextNeighbour SS.view
+            , PhyScreens.onNextNeighbour SS.view
             , "switch to next screen"
             )
           , ( (metaMask .|. shiftMask, xK_w)
-            , APS.onPrevNeighbour SS.shift
+            , PhyScreens.onPrevNeighbour SS.shift
             , "move focused window to previous screen"
             )
           , ( (metaMask .|. shiftMask, xK_e)
-            , APS.onNextNeighbour SS.shift
+            , PhyScreens.onNextNeighbour SS.shift
             , "move focused window to next screen"
             )
           ]
           ++ -- switch screens
           [ ( (metaMask .|. altMask, key)
-            , APS.viewScreen screenNum
+            , PhyScreens.viewScreen screenNum
             , "switch to screen nr." ++ show screenNum
             )
           | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
           ]
           ++ -- move focused window to another screen
           [ ( (metaMask .|. altMask .|. shiftMask, key)
-            , APS.sendToScreen screenNum
+            , PhyScreens.sendToScreen screenNum
             , "move focused window to screen nr." ++ show screenNum
             )
           | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
           ]
           ++ -- switch workspaces
           [ ( (metaMask, key)
-            , windows $ SS.greedyView workspace
+            , XM.windows $ SS.greedyView workspace
             , "switch to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
             )
           | (workspace, key, num) <- zip3 myWorkspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
           ]
           ++ -- move focused window to another workspace
           [ ( (metaMask .|. shiftMask, key)
-            , windows $ SS.shift workspace
+            , XM.windows $ SS.shift workspace
             , "move focused window to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
             )
           | (workspace, key, num) <- zip3 myWorkspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
           ]
           ++ -- copy focused window to another workspace
           [ ( (metaMask .|. controlMask .|. shiftMask, key)
-            , windows $ ACW.copy workspace
+            , XM.windows $ CopyWindow.copy workspace
             , "copy focused window to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
             )
           | (workspace, key, num) <- zip3 myWorkspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
@@ -589,7 +620,7 @@ keymaps = [ -- window management: change focus
 
 help = L.intercalate "\n" (header ++ [ppKey ++ kdSep ++ ppDesc | (ppKey, ppDesc) <- ppKeymaps])
   where
-    header = [title
+    header = [ title
              , concat $ replicate (length title) [titleSep]
              , ""
              ]
@@ -644,74 +675,74 @@ scratchpadsKeymaps = [ ( (0, xK_t)
                      ]
 
 searchKeymaps = [ ( (0, xK_a)
-                  , ASE.alpha
+                  , Search.alpha
                   , "wolfram alpha"
                   )
                 , ( (0, xK_c)
-                  , ASE.codesearch
+                  , Search.codesearch
                   , "google code"
                   )
                 , ( (0, xK_d)
-                  , ASE.dictionary
+                  , Search.dictionary
                   , "dictionary.com"
                   )
                 , ( (0, xK_g)
-                  , ASE.google
+                  , Search.google
                   , "google search"
                   )
-                , ( (0, xK_H)
-                  , ASE.hackage
+                , ( (shiftMask, xK_h)
+                  , Search.hackage
                   , "hackage"
                   )
                 , ( (0, xK_h)
-                  , ASE.hoogle
+                  , Search.hoogle
                   , "hoogle"
                   )
                 , ( (0, xK_i)
-                  , ASE.images
+                  , Search.images
                   , "google images"
                   )
                 , ( (0, xK_m)
-                  , ASE.maps
+                  , Search.maps
                   , "google maps"
                   )
-                , ( (0, xK_M)
-                  , ASE.mathworld
+                , ( (shiftMask, xK_m)
+                  , Search.mathworld
                   , "mathworld"
                   )
                 , ( (0, xK_s)
-                  , ASE.scholar
+                  , Search.scholar
                   , "google scholar"
                   )
                 , ( (0, xK_t)
-                  , ASE.thesaurus
+                  , Search.thesaurus
                   , "thesaurus.com"
                   )
-                , ( (0, xK_W)
-                  , ASE.wayback
+                , ( (shiftMask, xK_w)
+                  , Search.wayback
                   , "wayback"
                   )
                 , ( (0, xK_w)
-                  , ASE.wikipedia
+                  , Search.wikipedia
                   , "wikipedia"
                   )
                 , ( (0, xK_y)
-                  , ASE.youtube
+                  , Search.youtube
                   , "youtube"
                   )
                 , ( (0, xK_u)
-                  , ASE.multi
+                  , Search.multi
                   , "multi-search"
                   )
                 ]
 
 xmonadCommands :: X [(String, X ())]
-xmonadCommands = ACMD.defaultCommands
+xmonadCommands = Commands.defaultCommands
 
 -- TODO
 -- workspacePromptKeymap =
---  , ((0, xK_w), PW.workspacePrompt xpConfig (windows . SS.greedyView))
---  , ("M-a M-w", PW.workspacePrompt xpConfig (windows . SS.shift))
+--  , ((0, xK_w), PW.workspacePrompt xpConfig (XM.windows . SS.greedyView))
+--  , ("M-a M-w", PW.workspacePrompt xpConfig (XM.windows . SS.shift))
 --  , ("M-a m",   PM.manPrompt  xpConfig)
 --  , ("M-a d",   LWD.changeDir xpConfig)
 --  , ("M-a s",   PS.sshPrompt  xpConfig)
@@ -719,34 +750,41 @@ xmonadCommands = ACMD.defaultCommands
 -- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
 
 mouseMaps = [ ( (metaMask, button1)
-              , \w -> focus w
-                   >> mouseMoveWindow w
-                   >> AFS.ifClick (snap w)
+              , \w -> XM.focus w
+                   >> XM.mouseMoveWindow w
+                   >> FloatSnap.ifClick (snap w)
               , "move window (snapping to borders)"
               )
+            , ( (metaMask .|. altMask, button1)
+              , \w -> XM.focus w
+                   >> FlexM.mouseWindow FlexM.linear w
+                   >> FloatSnap.ifClick (snap w)
+              , "scale/reposition the window (dynamic behavior by mouse pos)"
+              )
             , ( (metaMask .|. shiftMask, button1)
-              , \w -> focus w
-                   >> mouseMoveWindow w
-                   >> AFS.ifClick (expandOnMove w)
+              , \w -> XM.focus w
+                   >> XM.mouseMoveWindow w
+                   >> FloatSnap.ifClick (expandOnMove w)
               , "move window (expanding to borders)"
               )
             , ( (metaMask, button3)
-              , \w -> focus w
-                   >> mouseResizeWindow w
-                   >> AFS.ifClick (expandOnResize w)
+              , \w -> XM.focus w
+                   >> FlexR.mouseResizeWindow w
+                   >> FloatSnap.ifClick (expandOnResize w)
               , "resize window (expanding to borders)"
               )
             , ( (metaMask .|. altMask, button3)
-              , \w -> focus w >> ACR.mouseResizeWindow w True
+              , \w -> XM.focus w
+                   >> ConstrResize.mouseResizeWindow w True
               , "resize window (keeping aspect ratio)")
             ]
   where
-    snap           w = AFS.snapMagicMove                distance distance w
-    expandOnMove   w = AFS.snapMagicResize allBorders   distance distance w
-    expandOnResize w = AFS.snapMagicResize resizeCorner distance distance w
+    snap           w = FloatSnap.snapMagicMove                distance distance w
+    expandOnMove   w = FloatSnap.snapMagicResize allBorders   distance distance w
+    expandOnResize w = FloatSnap.snapMagicResize resizeCorner distance distance w
 
-    allBorders   = [AFS.L, AFS.R, AFS.U, AFS.D]
-    resizeCorner = [AFS.R, AFS.D]
+    allBorders   = [FloatSnap.L, FloatSnap.R, FloatSnap.U, FloatSnap.D]
+    resizeCorner = [FloatSnap.R, FloatSnap.D]
 
     distance = (Just 128)
 
@@ -754,10 +792,10 @@ mouseMaps = [ ( (metaMask, button1)
 
 myTerminal = "<%= local! :term_open_cmd %>"
 
--- whether focus follows the mouse pointer
+-- whether XM.focus follows the mouse pointer
 shouldFocusFollowMouse = True
 
--- whether a mouse click select the focus or is just passed to the window
+-- whether a mouse click select the XM.focus or is just passed to the window
 shouldClickJustFocus = True
 
 -- ─────────────────────────────────────────────────────────── prompt •2.12• ──┤
@@ -851,9 +889,9 @@ data XWindowQuery a = XWindowClass    a
                     | XWindowResource a
                     | XWindowTitle    a
 
-checkXWindowQuery (XWindowClass    a) = className =? a
-checkXWindowQuery (XWindowTitle    a) = title     =? a
-checkXWindowQuery (XWindowResource a) = resource  =? a
+checkXWindowQuery (XWindowClass    a) = XM.className =? a
+checkXWindowQuery (XWindowTitle    a) = XM.title     =? a
+checkXWindowQuery (XWindowResource a) = XM.resource  =? a
 
 -- ─────────────────────────────────────────────────── misc - keymaps •3.04• ──┤
 
@@ -890,7 +928,7 @@ ppKeymap (key, desc, level) allKeys allDesc = (ppKey allKeys key level, ppDesc a
 unkeyify :: (KeyMask, KeySym) -> String
 unkeyify (m,s) = let dp "" = ""
                      dp p  = p ++ " + "
-                 in dp (vmask m) ++ keysymToString s
+                 in dp (vmask m) ++ XM.keysymToString s
 
 vmask :: KeyMask -> String
 vmask msk = L.intercalate " + "
