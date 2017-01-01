@@ -127,6 +127,7 @@ import qualified XMonad.Actions.FlexibleManipulate as FlexM
 import qualified XMonad.Actions.FlexibleResize     as FlexR
 import qualified XMonad.Actions.RotSlaves          as RotSlaves
 import qualified XMonad.Actions.FocusNth           as FocusNth
+import qualified XMonad.Actions.Launcher           as Launcher
 
 import qualified XMonad.Hooks.DynamicLog    as DynLog
 import qualified XMonad.Hooks.EwmhDesktops  as EWMH
@@ -137,14 +138,13 @@ import qualified XMonad.Hooks.Place         as Place
 import qualified XMonad.Hooks.SetWMName     as SetWMName
 import qualified XMonad.Hooks.UrgencyHook   as UrgencyHook
 
-import qualified XMonad.Layout.Decoration            as LD
-import qualified XMonad.Layout.MultiToggle           as LMT
-import qualified XMonad.Layout.MultiToggle.Instances as LMTI
-import qualified XMonad.Layout.NoBorders             as LNB
-import qualified XMonad.Layout.PerWorkspace          as LPW
-import qualified XMonad.Layout.Reflect               as LR
-import qualified XMonad.Layout.Tabbed                as LT
-import qualified XMonad.Layout.WorkspaceDir          as LWD
+import qualified XMonad.Layout.MultiToggle           as MultiToggle
+import qualified XMonad.Layout.MultiToggle.Instances as MultiToggleI
+import qualified XMonad.Layout.NoBorders             as NoBorders
+import qualified XMonad.Layout.PerWorkspace          as PerWorkspace
+import qualified XMonad.Layout.Reflect               as Reflect
+import qualified XMonad.Layout.Tabbed                as Tabbed
+import qualified XMonad.Layout.WorkspaceDir          as WorkspaceDir
 
 import qualified XMonad.ManageHook as ManageHook
 
@@ -201,34 +201,34 @@ main  = do myStatusBarHandle <- Run.spawnPipe statusBarCmd
 
 -- type is not specified because it is fucking hell (check `:t layoutHook`)
 -- luckly haskell has powerful type inference :D
-layoutHook = LNB.smartBorders . ManageDocks.avoidStruts
-           $ LWD.workspaceDir workspaceDir
-           $ LMT.mkToggle1 LMTI.NBFULL    -- switch to full with no borders
-           $ LMT.mkToggle1 LR.REFLECTX    -- reflect x-axis
-           $ LMT.mkToggle1 LR.REFLECTY    -- reflect y-axis
-           $ LMT.mkToggle1 LMTI.NOBORDERS -- remove borders
-           $ LMT.mkToggle1 LMTI.MIRROR    -- mirror the current layout
-           $ LPW.onWorkspace (workspaces !! 0) myRefLayouts
-           $ LPW.onWorkspace (workspaces !! 1) myWflowLayouts
-           $ LPW.onWorkspace (workspaces !! 2) myWflowLayouts
-           $ LPW.onWorkspace (workspaces !! 3) myWflowsuppLayouts
-           $ LPW.onWorkspace (workspaces !! 4) myOrgLayouts
-           $ LPW.onWorkspace (workspaces !! 5) mySocialLayouts
-           $ LPW.onWorkspace (workspaces !! 6) myPlayLayouts
-           $ LPW.onWorkspace (workspaces !! 7) myMgmtLayouts
-           $ LPW.onWorkspace (workspaces !! 8) myTmpLayouts
-           $ LPW.onWorkspace (workspaces !! 9) myComboLayouts
+layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
+           $ WorkspaceDir.workspaceDir workspaceDir
+           $ MultiToggle.mkToggle1 MultiToggleI.NBFULL    -- switch to full
+           $ MultiToggle.mkToggle1 Reflect.REFLECTX       -- reflect x-axis
+           $ MultiToggle.mkToggle1 Reflect.REFLECTY       -- reflect y-axis
+           $ MultiToggle.mkToggle1 MultiToggleI.NOBORDERS -- remove borders
+           $ MultiToggle.mkToggle1 MultiToggleI.MIRROR    -- mirror layout
+           $ PerWorkspace.onWorkspace (workspaces !! 0) myRefLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 1) myWflowLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 2) myWflowLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 3) myWflowsuppLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 4) myOrgLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 5) mySocialLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 6) myPlayLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 7) myMgmtLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 8) myTmpLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 9) myComboLayouts
            $ myDefaultLayouts
   where
     workspaceDir = "<%= File.expand_path local!(:workspace_dir) %>"
 
     -- Layout groups
-    tabbedLayout = LT.tabbed LT.shrinkText $ LT.defaultTheme
-                 { LT.inactiveBorderColor = toHex normalWindowBorderColor
-                 , LT.activeBorderColor   = toHex focusedWindowBorderColor
-                 , LT.activeTextColor     = toHex focusedWindowTextColor
-                 , LT.urgentBorderColor   = toHex urgentBorderColor
-                 , LT.urgentTextColor     = toHex urgentTextColor
+    tabbedLayout = Tabbed.tabbed Tabbed.shrinkText $ Tabbed.defaultTheme
+                 { Tabbed.inactiveBorderColor = toHex normalWindowBorderColor
+                 , Tabbed.activeBorderColor   = toHex focusedWindowBorderColor
+                 , Tabbed.activeTextColor     = toHex focusedWindowTextColor
+                 , Tabbed.urgentBorderColor   = toHex urgentBorderColor
+                 , Tabbed.urgentTextColor     = toHex urgentTextColor
                  }
     -- TODO: decide
     myRefLayouts       = tabbedLayout ||| myGridLayout
@@ -568,6 +568,10 @@ keymaps  = [ -- window management: change XM.focus
                  ]
              , "scratchpads"
              )
+           , ( (metaMask .|. controlMask, xK_a)
+             , Launcher.launcherPrompt Prompt.def $ Launcher.defaultLauncherModes launcherConfig
+             , "set of prompts" -- TODO better description
+             )
              -- search
            , ( (metaMask, xK_s)
              , Submap.submap $ Map.fromList
@@ -669,6 +673,12 @@ keymaps  = [ -- window management: change XM.focus
                    ++ " else"
                    ++ "   xmessage xmonad not in \\$PATH: \"$PATH\";"
                    ++ " fi"
+
+-- TODO: make it good
+launcherConfig = Launcher.LauncherConfig
+               { Launcher.pathToHoogle = "<%= ENV['HOME'] %>/.cabal/bin/hoogle"
+               , Launcher.browser = "<%= local! :web_browser %>"
+               }
 
 help :: String
 help  = List.intercalate "\n" ( header
@@ -804,7 +814,7 @@ xmonadCommands  = Commands.defaultCommands
 --  , ((0, xK_w), PW.workspacePrompt xpConfig (XM.windows . StackSet.greedyView))
 --  , ("M-a M-w", PW.workspacePrompt xpConfig (XM.windows . StackSet.shift))
 --  , ("M-a m",   PM.manPrompt  xpConfig)
---  , ("M-a d",   LWD.changeDir xpConfig)
+--  , ("M-a d",   WorkspaceDir.changeDir xpConfig)
 --  , ("M-a s",   PS.sshPrompt  xpConfig)
 
 -- ─────────────────────────────────────────────────── mouse bindings •2.10• ──┤
