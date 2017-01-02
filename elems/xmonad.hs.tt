@@ -30,6 +30,8 @@
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
+  variable :web_browser
+
   prefixed(:"xmonad.", as: nil) do
     variable :"terminal.open_cmd", as: :term_open_cmd
     variable :"terminal.run_cmd",  as: :term_run_cmd
@@ -569,7 +571,7 @@ keymaps  = [ -- window management: change XM.focus
              , "scratchpads"
              )
            , ( (metaMask .|. controlMask, xK_a)
-             , Launcher.launcherPrompt Prompt.def $ Launcher.defaultLauncherModes launcherConfig
+             , Launcher.launcherPrompt xpConfig $ Launcher.defaultLauncherModes launcherConfig
              , "set of prompts" -- TODO better description
              )
              -- search
@@ -676,8 +678,8 @@ keymaps  = [ -- window management: change XM.focus
 
 -- TODO: make it good
 launcherConfig = Launcher.LauncherConfig
-               { Launcher.pathToHoogle = "<%= ENV['HOME'] %>/.cabal/bin/hoogle"
-               , Launcher.browser = "<%= local! :web_browser %>"
+               { Launcher.pathToHoogle = "/usr/bin/hoogle"
+               , Launcher.browser      = "<%= local! :web_browser %>"
                }
 
 help :: String
