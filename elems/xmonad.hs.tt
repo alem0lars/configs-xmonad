@@ -421,8 +421,8 @@ altMask :: KeyMask
 altMask  = mod1Mask
 
 keymaps :: [((KeyMask, KeySym), X (), String)]
-keymaps  = [ -- ──────────────────────────────── window management •2.09.01• ──┤
-             -- ────────────── change focus  window management •2.09.01.01• ──┤
+keymaps  = [ -- ───────────────────────────── window management •2.09.01•    ──┤
+             -- ────────────── change focus ← window management •2.09.01.01• ──┤
              ( (metaMask, xK_Tab)
              , XM.windows StackSet.focusDown
              , "move XM.focus to the next window"
@@ -439,7 +439,7 @@ keymaps  = [ -- ─────────────────────�
              , XM.windows StackSet.focusUp
              , "move XM.focus to the previous window"
              )
-             -- window management: swap
+             -- ────────────────────── swap ← window management •2.09.01.02• ──┤
            , ( (metaMask, xK_Return)
              , Promote.dwmpromote
              , "swap focused window with master window"
