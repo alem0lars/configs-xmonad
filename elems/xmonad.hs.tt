@@ -421,7 +421,8 @@ altMask :: KeyMask
 altMask  = mod1Mask
 
 keymaps :: [((KeyMask, KeySym), X (), String)]
-keymaps  = [ -- window management: change XM.focus
+keymaps  = [ -- ──────────────────────────────── window management •2.09.01• ──┤
+             -- ────────────── change focus  window management •2.09.01.01• ──┤
              ( (metaMask, xK_Tab)
              , XM.windows StackSet.focusDown
              , "move XM.focus to the next window"
@@ -472,12 +473,7 @@ keymaps  = [ -- window management: change XM.focus
              , XM.sendMessage XM.Expand
              , "expand the master area"
              )
-             -- window management: cycle through workspaces
-           , ( (metaMask .|. controlMask, xK_Tab)
-             , CycleRecentWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
-             , "cycle through most recent workspaces"
-             )
-             -- window management: float XM.windows support
+             -- window management: float windows support
            , ( (metaMask .|. altMask, xK_r)
              , Place.placeFocused floatingWindowPlacement
              , "manually reposition focused floating window"
@@ -518,7 +514,7 @@ keymaps  = [ -- window management: change XM.focus
              , XM.withFocused $ FloatSnap.snapGrow FloatSnap.D Nothing
              , "expand focused window filling up to the bottom border"
              )
-             -- window management: work with master/slave XM.windows
+             -- window management: work with master/slave windows
            , ( (metaMask, xK_m)
              , XM.windows StackSet.focusMaster
              , "move XM.focus to the master window"
@@ -530,6 +526,48 @@ keymaps  = [ -- window management: change XM.focus
            , ( (metaMask, xK_period)
              , XM.sendMessage (XM.IncMasterN (-1))
              , "deincrement the number of XM.windows in the master area"
+             )
+             -- screen management: switch/move window to previous/next screen
+           , ( (metaMask, xK_w)
+             , PhyScreens.onPrevNeighbour StackSet.view
+             , "switch to previous screen"
+             )
+           , ( (metaMask, xK_e)
+             , PhyScreens.onNextNeighbour StackSet.view
+             , "switch to next screen"
+             )
+           , ( (metaMask .|. shiftMask, xK_w)
+             , PhyScreens.onPrevNeighbour StackSet.shift
+             , "move focused window to previous screen"
+             )
+           , ( (metaMask .|. shiftMask, xK_e)
+             , PhyScreens.onNextNeighbour StackSet.shift
+             , "move focused window to next screen"
+             )
+             -- workspace management
+           , ( (metaMask .|. controlMask, xK_Tab)
+             , CycleRecentWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
+             , "cycle through most recent workspaces"
+             )
+           , ( (metaMask .|. controlMask, xK_z)
+             , CycleWS.toggleWS
+             , "toggle to the workspace displayed previously"
+             )
+           , ( (metaMask .|. controlMask, xK_Down)
+             , CycleWS.prevWS
+             , "switch to previous workspace"
+             )
+           , ( (metaMask .|. controlMask, xK_Up)
+             , CycleWS.nextWS
+             , "switch to next workspace"
+             )
+           , ( (metaMask .|. controlMask .|. shiftMask, xK_Down)
+             , CycleWS.shiftToPrev
+             , "move focused window to previous workspace"
+             )
+           , ( (metaMask .|. controlMask .|. shiftMask, xK_Up)
+             , CycleWS.shiftToNext
+             , "move focused window to next workspace"
              )
              -- layout
            , ( (metaMask, xK_space)
@@ -602,24 +640,6 @@ keymaps  = [ -- window management: change XM.focus
            , ( (metaMask, xK_q)
              , XM.spawn recompileXMonad
              , "restart xmonad"
-             )
-           ]
-           ++ -- switch/move window to previous/next screen
-           [ ( (metaMask, xK_w)
-             , PhyScreens.onPrevNeighbour StackSet.view
-             , "switch to previous screen"
-             )
-           , ( (metaMask, xK_e)
-             , PhyScreens.onNextNeighbour StackSet.view
-             , "switch to next screen"
-             )
-           , ( (metaMask .|. shiftMask, xK_w)
-             , PhyScreens.onPrevNeighbour StackSet.shift
-             , "move focused window to previous screen"
-             )
-           , ( (metaMask .|. shiftMask, xK_e)
-             , PhyScreens.onNextNeighbour StackSet.shift
-             , "move focused window to next screen"
              )
            ]
            ++ -- switch screens
