@@ -80,15 +80,15 @@ end %>
 
 -- ───────────────────────────────────────────────────────────── imports •1• ──┐
 
+import GHC.IO.Handle.Types (Handle)
+
 import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 import Data.Bits ((.&.), bitSize, complement)
 
-import GHC.IO.Handle.Types (Handle)
-
-import qualified Data.Monoid as Monoid
-import qualified Data.Map    as Map
 import qualified Data.List   as List
+import qualified Data.Map    as Map
+import qualified Data.Monoid as Monoid
 
 import XMonad ( xmonad
               , X
@@ -105,8 +105,9 @@ import XMonad ( xmonad
               , xK_y, xK_z                            -- alphanumeric keys (5/5)
               , xK_1, xK_2, xK_3, xK_4, xK_5, xK_6         -- numeric keys (1/2)
               , xK_7, xK_8, xK_9, xK_0                     -- numeric keys (2/2)
-              , xK_Tab, xK_Return, xK_grave, xK_comma        -- other keys (1/2)
-              , xK_space, xK_period, xK_slash, xK_Alt_L      -- other keys (2/2)
+              , xK_Tab, xK_Return, xK_grave, xK_comma        -- other keys (1/3)
+              , xK_space, xK_period, xK_slash, xK_Alt_L      -- other keys (2/3)
+              , xK_minus, xK_plus                            -- other keys (3/3)
               , xK_Left, xK_Right, xK_Up, xK_Down                      -- arrows
               , mod1Mask, mod2Mask, mod3Mask, mod4Mask, mod5Mask  -- masks (1/2)
               , shiftMask, controlMask, lockMask                  -- masks (2/2)
@@ -115,21 +116,22 @@ import XMonad ( xmonad
 import qualified XMonad.Core as XMonad
 import qualified XMonad      as XM
 
-import qualified XMonad.Actions.UpdatePointer      as UpdatePointer
-import qualified XMonad.Actions.DwmPromote         as Promote
-import qualified XMonad.Actions.CycleRecentWS      as CycleRecentWS
 import qualified XMonad.Actions.Commands           as Commands
-import qualified XMonad.Actions.CopyWindow         as CopyWindow
 import qualified XMonad.Actions.ConstrainedResize  as ConstrResize
-import qualified XMonad.Actions.FloatSnap          as FloatSnap
-import qualified XMonad.Actions.PhysicalScreens    as PhyScreens
-import qualified XMonad.Actions.Search             as Search
-import qualified XMonad.Actions.Submap             as Submap
+import qualified XMonad.Actions.CopyWindow         as CopyWindow
+import qualified XMonad.Actions.CycleRecentWS      as CycleRecentWS
+import qualified XMonad.Actions.CycleWS            as CycleWS
+import qualified XMonad.Actions.DwmPromote         as Promote
 import qualified XMonad.Actions.FlexibleManipulate as FlexM
 import qualified XMonad.Actions.FlexibleResize     as FlexR
-import qualified XMonad.Actions.RotSlaves          as RotSlaves
+import qualified XMonad.Actions.FloatSnap          as FloatSnap
 import qualified XMonad.Actions.FocusNth           as FocusNth
 import qualified XMonad.Actions.Launcher           as Launcher
+import qualified XMonad.Actions.PhysicalScreens    as PhyScreens
+import qualified XMonad.Actions.RotSlaves          as RotSlaves
+import qualified XMonad.Actions.Search             as Search
+import qualified XMonad.Actions.Submap             as Submap
+import qualified XMonad.Actions.UpdatePointer      as UpdatePointer
 
 import qualified XMonad.Hooks.DynamicLog    as DynLog
 import qualified XMonad.Hooks.EwmhDesktops  as EWMH
@@ -423,19 +425,19 @@ altMask  = mod1Mask
 keymaps :: [((KeyMask, KeySym), X (), String)]
 keymaps  = [ -- ───────────────────────────── window management •2.09.01•    ──┤
              -- ────────────── change focus ← window management •2.09.01.01• ──┤
-             ( (metaMask, xK_Tab)
-             , XM.windows StackSet.focusDown
-             , "move focus to the next window"
-             )
-           , ( (metaMask .|. shiftMask, xK_Tab)
-             , XM.windows StackSet.focusUp
-             , "move focus to the previous window"
-             )
-           , ( (metaMask, xK_j)
+             ( (metaMask, xK_j)
              , XM.windows StackSet.focusDown
              , "move focus to the next window"
              )
            , ( (metaMask, xK_k)
+             , XM.windows StackSet.focusUp
+             , "move focus to the previous window"
+             )
+           , ( (metaMask, xK_Tab)
+             , XM.windows StackSet.focusDown
+             , "move focus to the next window"
+             )
+           , ( (metaMask .|. shiftMask, xK_Tab)
              , XM.windows StackSet.focusUp
              , "move focus to the previous window"
              )
@@ -484,18 +486,42 @@ keymaps  = [ -- ─────────────────────�
              , XM.sendMessage (XM.IncMasterN 1)
              , "increment the number of windows in the master area"
              )
-           , ( (metaMask, xK_period)
+           , ( (metaMask .|. altMask, xK_minus)
              , XM.sendMessage (XM.IncMasterN (-1))
              , "deincrement the number of windows in the master area"
              )
-             -- ───────────────────── float ← window management •2.09.01.05• ──┤
+           ]
+           ++ -- ──────────────── focus nth ← window management •2.09.01.05• ──┤
+           [ ( (metaMask .|. altMask, key)
+             , FocusNth.focusNth num
+             , "focus the window nr." ++ show num ++ " of the current workspace"
+             )
+           | (key, num) <- zip numericKeys [0..]
+           ]
+           ++ -- ──────── copy to workspace ← window management •2.09.01.06• ──┤
+           [ ( (metaMask .|. altMask .|. shiftMask, key)
+             , XM.windows $ CopyWindow.copy workspace
+             , "copy focused window to workspace '" ++ workspace ++ "'" ++
+               " (nr." ++ show num ++ ")"
+             )
+           | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
+           ]
+           ++ -- ──────── move to workspace ← window management •2.09.01.07• ──┤
+           [ ( (metaMask .|. shiftMask, key)
+             , XM.windows $ StackSet.shift workspace
+             , "move focused window to workspace '" ++ workspace ++ "'" ++
+               " (nr." ++ show num ++ ")"
+             )
+           | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
+           ]
+           ++ -- ──────────────────── float ← window management •2.09.01.08• ──┤
+           [ ( (metaMask, xK_t)
+             , XM.withFocused $ XM.windows . StackSet.sink
+             , "push window back into tiling"
+             )
            , ( (metaMask .|. altMask, xK_r)
              , Place.placeFocused floatingWindowPlacement
              , "manually reposition focused floating window"
-             )
-           , ( (metaMask, xK_t)
-             , XM.withFocused $ XM.windows . StackSet.sink
-             , "push window back into tiling"
              )
            , ( (metaMask .|. altMask, xK_Left)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.L Nothing
@@ -529,24 +555,7 @@ keymaps  = [ -- ─────────────────────�
              , XM.withFocused $ FloatSnap.snapGrow FloatSnap.D Nothing
              , "expand focused window filling up to the bottom border"
              )
-             -- screen management: switch/move window to previous/next screen
-           , ( (metaMask, xK_w)
-             , PhyScreens.onPrevNeighbour StackSet.view
-             , "switch to previous screen"
-             )
-           , ( (metaMask, xK_e)
-             , PhyScreens.onNextNeighbour StackSet.view
-             , "switch to next screen"
-             )
-           , ( (metaMask .|. shiftMask, xK_w)
-             , PhyScreens.onPrevNeighbour StackSet.shift
-             , "move focused window to previous screen"
-             )
-           , ( (metaMask .|. shiftMask, xK_e)
-             , PhyScreens.onNextNeighbour StackSet.shift
-             , "move focused window to next screen"
-             )
-             -- workspace management
+             -- ───────────────────────────── workspace management •2.09.02• ──┤
            , ( (metaMask .|. controlMask, xK_Tab)
              , CycleRecentWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
              , "cycle through most recent workspaces"
@@ -571,17 +580,61 @@ keymaps  = [ -- ─────────────────────�
              , CycleWS.shiftToNext
              , "move focused window to next workspace"
              )
-             -- layout
-           , ( (metaMask, xK_space)
+           ]
+           ++ -- ──────────────── switch ← workspace management •2.09.02.01• ──┤
+           [ ( (metaMask, key)
+             , XM.windows $ StackSet.greedyView workspace
+             , "switch to workspace '" ++ workspace ++ "'" ++
+               "(nr." ++ show num ++ ")"
+             )
+           | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
+           ]
+           ++ -- ──────────────────────────── screen management •2.09.03•    ──┤
+           [  -- ─────────────────── switch ← screen management •2.09.03.01• ──┤
+             ( (metaMask, xK_w)
+             , PhyScreens.onPrevNeighbour StackSet.view
+             , "switch to previous screen"
+             )
+           , ( (metaMask, xK_e)
+             , PhyScreens.onNextNeighbour StackSet.view
+             , "switch to next screen"
+             )
+             -- ─────────────── move window ← screen management •2.09.03.02• ──┤
+           , ( (metaMask .|. shiftMask, xK_w)
+             , PhyScreens.onPrevNeighbour StackSet.shift
+             , "move focused window to previous screen"
+             )
+           , ( (metaMask .|. shiftMask, xK_e)
+             , PhyScreens.onNextNeighbour StackSet.shift
+             , "move focused window to next screen"
+             )
+           ]
+           ++ -- switch screens
+           [ ( (metaMask .|. altMask, key)
+             , PhyScreens.viewScreen screenNum
+             , "switch to screen nr." ++ show screenNum
+             )
+           | (key, screenNum) <- zip numericKeys [0..]
+           ]
+           ++ -- move focused window to another screen
+           [ ( (metaMask .|. altMask .|. shiftMask, key)
+             , PhyScreens.sendToScreen screenNum
+             , "move focused window to screen nr." ++ show screenNum
+             )
+           | (key, screenNum) <- zip numericKeys [0..]
+           ]
+           ++ -- ───────────────────────────── layout management •2.09.04•    ──┤
+           [  -- ──────────────────── switch ← layout management •2.09.04.01• ──┤
+             ( (metaMask, xK_space)
              , XM.sendMessage XM.NextLayout
              , "rotate through the available layout algorithms"
              )
-         -- TODO doesn't work
-         --  , ( (metaMask .|. shiftMask, xK_space)
-         --    , setLayout layoutHook
-         --    , "reset the layouts on the current workspace to default"
-         --    )
-             -- launch
+             -- TODO doesn't work
+             --  , ( (metaMask .|. shiftMask, xK_space)
+             --    , setLayout layoutHook
+             --    , "reset the layouts on the current workspace to default"
+             --    )
+             -- ────────────────────────────────────────── execute •2.09.05• ──┤
            , ( (metaMask .|. controlMask, xK_p)
              , xmonadCommands >>= Commands.runCommand
              , "run an internal xmonad command"
@@ -602,7 +655,7 @@ keymaps  = [ -- ─────────────────────�
              , CopyWindow.killAllOtherCopies
              , "close all other copies of focused window"
              )
-             -- scratchpads
+             -- ────────────────────────────────────── scratchpads •2.09.06• ──┤
            , ( (metaMask, xK_a)
              , Submap.submap $ Map.fromList
                  [ (kb, action)
@@ -614,7 +667,7 @@ keymaps  = [ -- ─────────────────────�
              , Launcher.launcherPrompt xpConfig $ Launcher.defaultLauncherModes launcherConfig
              , "set of prompts" -- TODO better description
              )
-             -- search
+             -- ─────────────────────────────────────────── search •2.09.07• ──┤
            , ( (metaMask, xK_s)
              , Submap.submap $ Map.fromList
                  [ (kb, Search.promptSearch Prompt.defaultXPConfig action)
@@ -629,66 +682,23 @@ keymaps  = [ -- ─────────────────────�
                  ]
              , "search from selection"
              )
-             -- help
+             -- ───────────────────────────────────────────── help •2.09.08• ──┤
            , ( (metaMask .|. shiftMask, xK_slash)
              , XM.spawn $ xmessage help
              , "show available bindings"
              )
-             -- quit / restart
-           , ( (metaMask .|. shiftMask, xK_q)
-             , XM.io $ exitWith ExitSuccess
-             , "quit xmonad"
-             )
+             -- ───────────────────────────────────── quit/restart •2.09.09• ──┤
            , ( (metaMask, xK_q)
              , XM.spawn recompileXMonad
              , "restart xmonad"
              )
-           ]
-           ++ -- switch screens
-           [ ( (metaMask .|. altMask, key)
-             , PhyScreens.viewScreen screenNum
-             , "switch to screen nr." ++ show screenNum
+           , ( (metaMask .|. shiftMask, xK_q)
+             , XM.io $ exitWith ExitSuccess
+             , "quit xmonad"
              )
-           | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
-           ]
-           ++ -- move focused window to another screen
-           [ ( (metaMask .|. altMask .|. shiftMask, key)
-             , PhyScreens.sendToScreen screenNum
-             , "move focused window to screen nr." ++ show screenNum
-             )
-           | (key, screenNum) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
-           ]
-           ++ -- switch workspaces
-           [ ( (metaMask, key)
-             , XM.windows $ StackSet.greedyView workspace
-             , "switch to workspace '" ++ workspace ++ "'" ++ " (nr." ++ show num ++ ")"
-             )
-           | (workspace, key, num) <- zip3 workspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
-           ]
-           ++ -- move focused window to another workspace
-           [ ( (metaMask .|. shiftMask, key)
-             , XM.windows $ StackSet.shift workspace
-             , "move focused window to workspace '" ++ workspace ++ "'" ++
-               " (nr." ++ show num ++ ")"
-             )
-           | (workspace, key, num) <- zip3 workspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
-           ]
-           ++ -- focus the nth window of the current workspace
-           [ ( (metaMask .|. controlMask, key)
-             , FocusNth.focusNth num
-             , "focus the window nr." ++ show num ++ " of the current workspace"
-             )
-           | (key, num) <- zip ([xK_1 .. xK_9] ++ [xK_0]) [0..]
-           ]
-           ++ -- copy focused window to another workspace
-           [ ( (metaMask .|. controlMask .|. shiftMask, key)
-             , XM.windows $ CopyWindow.copy workspace
-             , "copy focused window to workspace '" ++ workspace ++ "'" ++
-               " (nr." ++ show num ++ ")"
-             )
-           | (workspace, key, num) <- zip3 workspaces ([xK_1 .. xK_9] ++ [xK_0]) [1..]
            ]
   where
+    numericKeys = [xK_1 .. xK_9] ++ [xK_0]
     programLauncher = "dmenu_run"
 
     recompileXMonad = " if type xmonad; then"
