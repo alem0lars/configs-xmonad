@@ -397,19 +397,22 @@ scratchpadSize :: StackSet.RationalRect
 scratchpadSize  = StackSet.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)
 
 scratchpads :: [Scratchpad.NamedScratchpad]
-scratchpads  = [ Scratchpad.NS "term" terminal (ManageHook.title =? "term") size
-               , Scratchpad.NS "top" (runCmd "htop") (ManageHook.title =? "htop") size
+scratchpads  = [ scratchpad "term" terminal
+               , scratchpad "htop" "htop"
                <% if has_feature? :python %>
-               , Scratchpad.NS "ipython" (runCmd "ipython") (ManageHook.title =? "ipython") size
+               , scratchpad "ipython" "ipython"
                <% end %>
                <% if has_feature? :ruby %>
-               , Scratchpad.NS "irb" (runCmd "irb") (ManageHook.title =? "irb") size
+               , scratchpad "irb" "irb"
                <% end %>
                <% if has_feature? :haskell %>
-               , Scratchpad.NS "ghci" (runCmd "ghci") (ManageHook.title =? "ghci") size
+               , scratchpad "ghci" "ghci"
                <% end %>
                ]
   where
+    scratchpad name cmd = Scratchpad.NS name (runCmd cmd)
+                                             (ManageHook.title =? name)
+                                             size
     runCmd cmd = "<%= local! :term_run_cmd %> " ++ cmd
 
     size = Scratchpad.customFloating scratchpadSize
