@@ -425,19 +425,19 @@ keymaps  = [ -- ─────────────────────�
              -- ────────────── change focus ← window management •2.09.01.01• ──┤
              ( (metaMask, xK_Tab)
              , XM.windows StackSet.focusDown
-             , "move XM.focus to the next window"
+             , "move focus to the next window"
              )
            , ( (metaMask .|. shiftMask, xK_Tab)
              , XM.windows StackSet.focusUp
-             , "move XM.focus to the previous window"
+             , "move focus to the previous window"
              )
            , ( (metaMask, xK_j)
              , XM.windows StackSet.focusDown
-             , "move XM.focus to the next window"
+             , "move focus to the next window"
              )
            , ( (metaMask, xK_k)
              , XM.windows StackSet.focusUp
-             , "move XM.focus to the previous window"
+             , "move focus to the previous window"
              )
              -- ────────────────────── swap ← window management •2.09.01.02• ──┤
            , ( (metaMask, xK_Return)
@@ -454,16 +454,18 @@ keymaps  = [ -- ─────────────────────�
              )
            , ( (metaMask .|. altMask .|. shiftMask, xK_j)
              , RotSlaves.rotSlavesUp
-             , "rotate (up) the XM.windows in the current stack, excluding the master window"
+             , "rotate (up) the windows in the current stack, " ++
+               "excluding the master window"
              )
            , ( (metaMask .|. altMask .|. shiftMask, xK_k)
              , RotSlaves.rotSlavesDown
-             , "rotate (down) the XM.windows in the current stack, excluding the master window"
+             , "rotate (down) the windows in the current stack, " ++
+               "excluding the master window"
              )
-             -- window management: resize
+             -- ──────────────────── resize ← window management •2.09.01.03• ──┤
            , ( (metaMask, xK_n)
              , XM.refresh
-             , "resize viewed XM.windows to the correct size"
+             , "resize viewed windows to the correct size"
              )
            , ( (metaMask, xK_h)
              , XM.sendMessage XM.Shrink
@@ -473,7 +475,20 @@ keymaps  = [ -- ─────────────────────�
              , XM.sendMessage XM.Expand
              , "expand the master area"
              )
-             -- window management: float windows support
+             -- ────────────── master/slave ← window management •2.09.01.04• ──┤
+           , ( (metaMask, xK_m)
+             , XM.windows StackSet.focusMaster
+             , "move focus to the master window"
+             )
+           , ( (metaMask .|. altMask, xK_plus)
+             , XM.sendMessage (XM.IncMasterN 1)
+             , "increment the number of windows in the master area"
+             )
+           , ( (metaMask, xK_period)
+             , XM.sendMessage (XM.IncMasterN (-1))
+             , "deincrement the number of windows in the master area"
+             )
+             -- ───────────────────── float ← window management •2.09.01.05• ──┤
            , ( (metaMask .|. altMask, xK_r)
              , Place.placeFocused floatingWindowPlacement
              , "manually reposition focused floating window"
@@ -482,50 +497,37 @@ keymaps  = [ -- ─────────────────────�
              , XM.withFocused $ XM.windows . StackSet.sink
              , "push window back into tiling"
              )
-           , ( (metaMask, xK_Left)
+           , ( (metaMask .|. altMask, xK_Left)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.L Nothing
              , "snap focused window to left border"
              )
-           , ( (metaMask, xK_Right)
+           , ( (metaMask .|. altMask, xK_Right)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.R Nothing
              , "snap focused window to right border"
              )
-           , ( (metaMask, xK_Up)
+           , ( (metaMask .|. altMask, xK_Up)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.U Nothing
              , "snap focused window to top border"
              )
-           , ( (metaMask, xK_Down)
+           , ( (metaMask .|. altMask, xK_Down)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.D Nothing
              , "snap focused window to bottom border"
              )
-           , ( (metaMask .|. shiftMask, xK_Left)
+           , ( (metaMask .|. altMask .|. shiftMask, xK_Left)
              , XM.withFocused $ FloatSnap.snapShrink FloatSnap.L Nothing
              , "expand focused window filling up to the left border"
              )
-           , ( (metaMask .|. shiftMask, xK_Right)
+           , ( (metaMask .|. altMask .|. shiftMask, xK_Right)
              , XM.withFocused $ FloatSnap.snapGrow FloatSnap.R Nothing
              , "expand focused window filling up to the right border"
              )
-           , ( (metaMask .|. shiftMask, xK_Up)
+           , ( (metaMask .|. altMask .|. shiftMask, xK_Up)
              , XM.withFocused $ FloatSnap.snapShrink FloatSnap.U Nothing
              , "expand focused window filling up to the top border"
              )
-           , ( (metaMask .|. shiftMask, xK_Down)
+           , ( (metaMask .|. altMask .|. shiftMask, xK_Down)
              , XM.withFocused $ FloatSnap.snapGrow FloatSnap.D Nothing
              , "expand focused window filling up to the bottom border"
-             )
-             -- window management: work with master/slave windows
-           , ( (metaMask, xK_m)
-             , XM.windows StackSet.focusMaster
-             , "move XM.focus to the master window"
-             )
-           , ( (metaMask, xK_comma)
-             , XM.sendMessage (XM.IncMasterN 1)
-             , "increment the number of XM.windows in the master area"
-             )
-           , ( (metaMask, xK_period)
-             , XM.sendMessage (XM.IncMasterN (-1))
-             , "deincrement the number of XM.windows in the master area"
              )
              -- screen management: switch/move window to previous/next screen
            , ( (metaMask, xK_w)
