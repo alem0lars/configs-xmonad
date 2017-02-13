@@ -159,7 +159,7 @@ import qualified XMonad.StackSet as StackSet
 import qualified XMonad.Util.NamedScratchpad as Scratchpad
 import qualified XMonad.Util.Run             as Run
 
--- TODO import qualified System.Taffybar.Hooks.PagerHints as TB
+import qualified System.Taffybar.Hooks.PagerHints as TB
 
 -- ────────────────────────────────────────────────────────────────────────────┘
 
@@ -167,17 +167,17 @@ import qualified XMonad.Util.Run             as Run
 -- ───────────────────────────────────────────────────────────── xconfig •2• ──┐
 
 main :: IO ()
-main  = do myStatusBarHandle <- Run.spawnPipe statusBarCmd
+main  = do -- myStatusBarHandle <- Run.spawnPipe statusBarCmd
            xmonad $ UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
                   $ EWMH.ewmh
-                  -- TODO $ TB.pagerHints
+                  $ TB.pagerHints
                   $ xConfig myStatusBarHandle
   where
     xConfig myStatusBarHandle = XM.defaultConfig
       { XMonad.layoutHook         = layoutHook
       , XMonad.manageHook         = manageHook
       , XMonad.handleEventHook    = handleEventHook
-      , XMonad.logHook            = logHook myStatusBarHandle
+      -- , XMonad.logHook            = logHook myStatusBarHandle
       , XMonad.startupHook        = startupHook
       , XMonad.workspaces         = workspaces
       , XMonad.modMask            = metaMask
