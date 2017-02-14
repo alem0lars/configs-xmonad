@@ -167,17 +167,15 @@ import qualified System.Taffybar.Hooks.PagerHints as TB
 -- ───────────────────────────────────────────────────────────── xconfig •2• ──┐
 
 main :: IO ()
-main  = do -- myStatusBarHandle <- Run.spawnPipe statusBarCmd
-           xmonad $ UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
+main  = do xmonad $ UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
                   $ EWMH.ewmh
                   $ TB.pagerHints
-                  $ xConfig myStatusBarHandle
+                  $ xConfig
   where
-    xConfig myStatusBarHandle = XM.defaultConfig
+    xConfig = XM.defaultConfig
       { XMonad.layoutHook         = layoutHook
       , XMonad.manageHook         = manageHook
       , XMonad.handleEventHook    = handleEventHook
-      -- , XMonad.logHook            = logHook myStatusBarHandle
       , XMonad.startupHook        = startupHook
       , XMonad.workspaces         = workspaces
       , XMonad.modMask            = metaMask
@@ -227,7 +225,8 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
     workspaceDir = "<%= File.expand_path local!(:workspace_dir) %>"
 
     -- Layout groups
-    tabbedLayout = Tabbed.tabbed Tabbed.shrinkText $ Tabbed.defaultTheme
+    tabbedLayout = Tabbed.tabbed Tabbed.shrinkText
+                 $ Tabbed.defaultTheme
                  { Tabbed.inactiveBorderColor = toHex normalWindowBorderColor
                  , Tabbed.activeBorderColor   = toHex focusedWindowBorderColor
                  , Tabbed.activeTextColor     = toHex focusedWindowTextColor
@@ -283,61 +282,61 @@ workspaces  = zipWith (++) workspaceIds
 
 -- ───────────────────────────────────────────────────────── log hook •2.03• ──┤
 
-logHook :: Handle
-        -> X ()
-
-logHook h = do copies <- CopyWindow.wsContainingCopies
-               ICCCMFocus.takeTopFocus
-               DynLog.dynamicLogWithPP (statusPP h copies)
-               UpdatePointer.updatePointer (0.5, 0.5) (0, 0)
-
-statusBarCmd :: String
-statusBarCmd  = "/usr/bin/xmobar"
-
-statusPP :: Foldable t
-         => Handle
-         -> t String
-         -> DynLog.PP
-
-statusPP h copies = DynLog.defaultPP
-                  { DynLog.ppCurrent         = format currentColor currentSymbols
-                  , DynLog.ppVisible         = format visibleColor visibleSymbols
-                  , DynLog.ppHidden          = formatHidden copies
-                  , DynLog.ppHiddenNoWindows = format emptyColor   emptySymbols
-                  , DynLog.ppUrgent          = format urgentColor  urgentSymbols
-                  , DynLog.ppLayout          = format layoutColor  layoutSymbols
-                                             . take 16 -- maximum layout name (TODO to be computed automatically)
-                                          . (++ repeat ' ')
-                  , DynLog.ppSep    = "  "
-                  , DynLog.ppWsSep  = " "
-                  , DynLog.ppTitle  = take 0
-                  , DynLog.ppOutput = Run.hPutStrLn h
-                  }
-  where
-    formatHidden copies ws | (ws `elem` copies) = format hiddenWithCopiesColor hiddenSymbols ws
-                           | otherwise          = format hiddenColor           hiddenSymbols ws
-    -- utility function: surround with symbols and apply colors
-    format colorSpec symbolSpec = uncurry DynLog.xmobarColor (mapT toHex colorSpec)
-                                . uncurry DynLog.wrap symbolSpec
-
-    currentColor   = (bgColor, green colors)
-    currentSymbols = (" ◄ ", " ► ")
-
-    visibleColor   = (bgColor, orange colors)
-    visibleSymbols = (" |", "| ")
-
-    hiddenWithCopiesColor = (bgColor, yellow colors)
-    hiddenColor           = (bgColor, cyan colors)
-    hiddenSymbols         = (" ⟨ ", " ⟩ ")
-
-    emptyColor   = (bgColor, grey colors)
-    emptySymbols = (" ∅ ", " ∅ ")
-
-    urgentColor   = (bgColor, red colors)
-    urgentSymbols = (" ! ", " ! ")
-
-    layoutColor   = (bgColor, magenta colors)
-    layoutSymbols = (" λ ", " λ ")
+-- logHook :: Handle
+--         -> X ()
+--
+-- logHook h = do copies <- CopyWindow.wsContainingCopies
+--                ICCCMFocus.takeTopFocus
+--                DynLog.dynamicLogWithPP (statusPP h copies)
+--                UpdatePointer.updatePointer (0.5, 0.5) (0, 0)
+--
+-- statusBarCmd :: String
+-- statusBarCmd  = "/usr/bin/xmobar"
+--
+-- statusPP :: Foldable t
+--          => Handle
+--          -> t String
+--          -> DynLog.PP
+--
+-- statusPP h copies = DynLog.defaultPP
+--                   { DynLog.ppCurrent         = format currentColor currentSymbols
+--                   , DynLog.ppVisible         = format visibleColor visibleSymbols
+--                   , DynLog.ppHidden          = formatHidden copies
+--                   , DynLog.ppHiddenNoWindows = format emptyColor   emptySymbols
+--                   , DynLog.ppUrgent          = format urgentColor  urgentSymbols
+--                   , DynLog.ppLayout          = format layoutColor  layoutSymbols
+--                                              . take 16 -- maximum layout name (TODO to be computed automatically)
+--                                           . (++ repeat ' ')
+--                   , DynLog.ppSep    = "  "
+--                   , DynLog.ppWsSep  = " "
+--                   , DynLog.ppTitle  = take 0
+--                   , DynLog.ppOutput = Run.hPutStrLn h
+--                   }
+--   where
+--     formatHidden copies ws | (ws `elem` copies) = format hiddenWithCopiesColor hiddenSymbols ws
+--                            | otherwise          = format hiddenColor           hiddenSymbols ws
+--     -- utility function: surround with symbols and apply colors
+--     format colorSpec symbolSpec = uncurry DynLog.xmobarColor (mapT toHex colorSpec)
+--                                 . uncurry DynLog.wrap symbolSpec
+--
+--     currentColor   = (bgColor, green colors)
+--     currentSymbols = (" ◄ ", " ► ")
+--
+--     visibleColor   = (bgColor, orange colors)
+--     visibleSymbols = (" |", "| ")
+--
+--     hiddenWithCopiesColor = (bgColor, yellow colors)
+--     hiddenColor           = (bgColor, cyan colors)
+--     hiddenSymbols         = (" ⟨ ", " ⟩ ")
+--
+--     emptyColor   = (bgColor, grey colors)
+--     emptySymbols = (" ∅ ", " ∅ ")
+--
+--     urgentColor   = (bgColor, red colors)
+--     urgentSymbols = (" ! ", " ! ")
+--
+--     layoutColor   = (bgColor, magenta colors)
+--     layoutSymbols = (" λ ", " λ ")
 
 -- ───────────────────────────────────────────────────── startup hook •2.05• ──┤
 

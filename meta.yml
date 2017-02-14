@@ -13,5 +13,9 @@ elems:
     perms: 755
     only:  f?xmonad && f?xmobar
 
+  - src:   ^(taffybar\.hs)$
+    dst:   <%= xdg_config_home(:taffybar) %>/<1>
+    only:  f?xmonad && f?taffybar
+
 
 # vim: set filetype=eruby.yaml :
