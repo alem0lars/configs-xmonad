@@ -177,7 +177,6 @@ main  = do xmonad $ UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
             { XMonad.layoutHook         = layoutHook
             , XMonad.manageHook         = manageHook
             , XMonad.handleEventHook    = handleEventHook
-            , XMonad.logHook            = logHook
             , XMonad.startupHook        = startupHook
             , XMonad.workspaces         = workspaces
             , XMonad.modMask            = metaMask
