@@ -1,4 +1,4 @@
-# => inherits: generic, with-taffybar, with-alem0lars-fonts, with-firefox, with-openterm, with-colorscheme-jellybeans, with-trayer, with-langs <= #
+# => inherits: generic, with-taffybar, with-alem0lars-fonts, with-firefox, with-openterm, with-colorscheme-jellybeans, with-langs <= #
 
 
 # vim: set filetype=eruby.yaml :
