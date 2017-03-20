@@ -41,12 +41,14 @@ end %>
 
 import System.Taffybar
 
+import System.Taffybar.Battery
 import System.Taffybar.Systray
 import System.Taffybar.TaffyPager
 import System.Taffybar.SimpleClock
 import System.Taffybar.FreedesktopNotifications
 import System.Taffybar.Weather
 import System.Taffybar.MPRIS
+import System.Taffybar.NetMonitor
 
 import System.Taffybar.Widgets.PollingBar
 import System.Taffybar.Widgets.PollingGraph
@@ -71,16 +73,19 @@ main = do
                                                       ]
                                   , graphLabel = Just "cpu"
                                   }
+      batCfg = defaultBatteryConfig
   let clock = textClockNew Nothing "<span fgcolor='orange'>%a %b %_d %H:%M</span>" 1
       pager = taffyPagerNew defaultPagerConfig
       note = notifyAreaNew defaultNotificationConfig
-      wea = weatherNew (defaultWeatherConfig "KMSN") 10
       mpris = mprisNew defaultMPRISConfig
-      mem = pollingGraphNew memCfg 1 memCallback
-      cpu = pollingGraphNew cpuCfg 0.5 cpuCallback
+      mem = pollingGraphNew memCfg 5 memCallback
+      cpu = pollingGraphNew cpuCfg 5 cpuCallback
+      bat = batteryBarNew batCfg 30
       tray = systrayNew
+      eth = netMonitorNewWith 5 "<%= get_var! 'net.eth' " 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+      wifi = netMonitorNewWith 5 "<%= get_var! 'net.wifi' " 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
   defaultTaffybar defaultTaffybarConfig { startWidgets = [ pager, note ]
-                                        , endWidgets = [ tray, wea, clock, mem, cpu, mpris ]
+                                        , endWidgets = [ tray, clock, mem, cpu, bat, wifi, eth, mpris ]
                                         }
 
 
