@@ -30,6 +30,8 @@
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
+  variable :"net.eth",  as: :eth
+  variable :"net.wifi", as: :wifi
   prefixed(:"xmonad.", as: nil) do
     variable(:colorscheme) do |colorscheme|
       Hash[colorscheme.map { |name, hex| [name.camelize, hex] }]
@@ -82,11 +84,26 @@ main = do
       cpu = pollingGraphNew cpuCfg 5 cpuCallback
       bat = batteryBarNew batCfg 30
       tray = systrayNew
-      eth = netMonitorNewWith 5 "<%= get_var! 'net.eth' %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
-      wifi = netMonitorNewWith 5 "<%= get_var! 'net.wifi' %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
-  defaultTaffybar defaultTaffybarConfig { startWidgets = [ pager, note ]
-                                        , endWidgets = [ tray, clock, mem, cpu, bat, wifi, eth, mpris ]
-                                        }
+      <% if local? :eth %>
+      eth = netMonitorNewWith 5 "<%= local! :eth %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+      <% end %>
+      <% if local? :wifi %>
+      wifi = netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+      <% end %>
+  defaultTaffybar defaultTaffybarConfig
+      { startWidgets = [ pager
+                       , note
+                       ]
+      , endWidgets = [ tray
+                     , clock
+                     , mem
+                     , cpu
+                     , bat
+                     <%= local?(:wifi) ? ", wifi" : "" %>
+                     <%= local?(:eth) ? ", eth" : "" %>
+                     , mpris
+                     ]
+      }
 
 
 -- vim: set filetype=eruby.haskell :
