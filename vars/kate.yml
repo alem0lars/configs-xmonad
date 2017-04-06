@@ -1,4 +1,9 @@
 # => inherits: generic, with-taffybar, with-alem0lars-fonts, with-firefox, with-openterm, with-colorscheme-jellybeans, with-langs <= #
 
 
+net:
+  eth:  enp0s25
+  wifi: wlp3s0
+
+
 # vim: set filetype=eruby.yaml :
