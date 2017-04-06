@@ -47,7 +47,6 @@ import System.Taffybar.Battery
 import System.Taffybar.Systray
 import System.Taffybar.TaffyPager
 import System.Taffybar.SimpleClock
-import System.Taffybar.FreedesktopNotifications
 import System.Taffybar.Weather
 import System.Taffybar.MPRIS
 import System.Taffybar.NetMonitor
@@ -78,7 +77,6 @@ main = do
       batCfg = defaultBatteryConfig
   let clock = textClockNew Nothing "<span fgcolor='orange'>%a %b %_d %H:%M</span>" 1
       pager = taffyPagerNew defaultPagerConfig
-      note = notifyAreaNew defaultNotificationConfig
       mpris = mprisNew defaultMPRISConfig
       mem = pollingGraphNew memCfg 5 memCallback
       cpu = pollingGraphNew cpuCfg 5 cpuCallback
@@ -92,7 +90,6 @@ main = do
       <% end %>
   defaultTaffybar defaultTaffybarConfig
       { startWidgets = [ pager
-                       , note
                        ]
       , endWidgets = [ tray
                      , clock
