@@ -211,22 +211,22 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
            $ MultiToggle.mkToggle1 Reflect.REFLECTY       -- reflect y-axis
            $ MultiToggle.mkToggle1 MultiToggleI.NOBORDERS -- remove borders
            $ MultiToggle.mkToggle1 MultiToggleI.MIRROR    -- mirror layout
-           $ PerWorkspace.onWorkspace (workspaces !! 0) myRefLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 1) myWflowLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 2) myWflowLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 3) myWflowsuppLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 4) myOrgLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 5) mySocialLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 6) myPlayLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 7) myMgmtLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 8) myTmpLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 9) myComboLayouts
-           $ myDefaultLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 0) refLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 1) wflowLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 2) wflowLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 3) wflowsuppLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 4) orgLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 5) socialLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 6) playLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 7) mgmtLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 8) miscLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 9) vmLayouts
+           $ defaultLayouts
   where
     workspaceDir = "<%= File.expand_path local!(:workspace_dir) %>"
 
     -- Layout groups
-    tabbedLayout = Tabbed.tabbed Tabbed.shrinkText $ Tabbed.defaultTheme
+    tabbedLayout = Tabbed.tabbedAlways Tabbed.shrinkText $ Tabbed.defaultTheme
                  { Tabbed.inactiveColor       = toHex inactiveBgColor
                  , Tabbed.inactiveTextColor   = toHex inactiveFgColor
                  , Tabbed.inactiveBorderColor = toHex inactiveBorderColor
@@ -236,29 +236,19 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
                  , Tabbed.urgentColor         = toHex urgentBgColor
                  , Tabbed.urgentTextColor     = toHex urgentFgColor
                  , Tabbed.urgentBorderColor   = toHex urgentBorderColor
+                 , Tabbed.fontName            = toXft font
                  }
 
-    -- TODO: decide
-    myRefLayouts       = tabbedLayout ||| myGridLayout
-    myWflowLayouts     = myOneBigLayout ||| myMosaicLayout ||| myGridLayout ||| tabbedLayout
-    myWflowsuppLayouts = tabbedLayout ||| myGridLayout ||| myOneBigLayout ||| myMosaicLayout
-    myOrgLayouts       = tabbedLayout ||| myGridLayout
-    mySocialLayouts    = tabbedLayout ||| myGridLayout
-    myPlayLayouts      = tabbedLayout ||| myGridLayout
-    myMgmtLayouts      = myGridLayout ||| myOneBigLayout ||| tabbedLayout
-    myTmpLayouts       = myGridLayout ||| tabbedLayout
-    myComboLayouts     = tabbedLayout
-    myDefaultLayouts   = myWflowLayouts
-
-    -- Layout definitions
-    myCrossLayout     = XM.Full -- TODO simpleCross
-    myFullLayout      = XM.Full -- TODO Full
-    myAccordionLayout = XM.Full -- TODO Accordion
-    myGridLayout      = XM.Full -- TODO Grid
-    mySpiralLayout    = XM.Full -- TODO spiral (1/2)
-    myMosaicLayout    = XM.Full -- TODO mosaic 2 [3, 2]
-    myFloatLayout     = XM.Full -- TODO simpleFloat
-    myOneBigLayout    = XM.Full -- TODO OneBig 0.6 0.74
+    refLayouts       = tabbedLayout
+    wflowLayouts     = tabbedLayout
+    wflowsuppLayouts = tabbedLayout
+    orgLayouts       = tabbedLayout
+    socialLayouts    = tabbedLayout
+    playLayouts      = tabbedLayout
+    mgmtLayouts      = tabbedLayout
+    miscLayouts      = tabbedLayout
+    vmLayouts        = tabbedLayout
+    defaultLayouts   = tabbedLayout
 
 -- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
 
@@ -281,8 +271,8 @@ workspaces  = zipWith (++) workspaceIds
                      , "social"
                      , "play"
                      , "mgmt"
-                     , "tmp"
-                     , "combo"
+                     , "misc"
+                     , "vm"
                      ]
 
 -- ───────────────────────────────────────────────────────── log hook •2.03• ──┤
