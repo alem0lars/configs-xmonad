@@ -4,7 +4,7 @@ elems:
     dst:  ~/.<1>/<2>
     only: f?xmonad
 
-  - src:  ^taffybar/(.+\.hs)$
+  - src:  ^taffybar\/(.+\.(?:hs|rc))$
     dst:  <%= xdg_config_home :taffybar %>/<1>
     only: f?xmonad && f?taffybar
 
