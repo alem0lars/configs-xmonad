@@ -33,8 +33,9 @@
   variable :web_browser
 
   prefixed(:"xmonad.", as: nil) do
-    variable :"terminal.open_cmd", as: :term_open_cmd
-    variable :"terminal.run_cmd",  as: :term_run_cmd
+    variable :"terminal.open_cmd",    as: :term_open_cmd
+    variable :"terminal.run_cmd_opt", as: :term_run_cmd_opt
+    variable :"terminal.title_opt",   as: :term_title_opt
 
     variable :workspace_dir
 
@@ -352,9 +353,9 @@ handleEventHook =  XM.handleEventHook XM.defaultConfig
 -- ────────────────────────────────────────────────────── manage hook •2.07• ──┤
 
 manageHook ::  XM.ManageHook
-manageHook  =  Place.placeHook floatingWindowPlacement
+manageHook  =  XM.manageHook XM.defaultConfig
            <+> basicManageHook
-           <+> XM.manageHook XM.defaultConfig
+           <+> Place.placeHook floatingWindowPlacement
 
 floatingWindowPlacement :: Place.Placement
 floatingWindowPlacement  = Place.withGaps (16, 0, 16, 0)
@@ -383,6 +384,7 @@ basicManageHook  = XM.composeAll . concat $
 
     shifts = [ (XWindowClass "Firefox",                   workspaces !! 0)
              , (XWindowClass "chromium-browser-chromium", workspaces !! 0)
+             , (XWindowClass "Slack",                     workspaces !! 6)
              ]
 
 -- ────────────────────────────────────────────────────── scratchpads •2.08• ──┤
@@ -404,13 +406,19 @@ scratchpads  = [ scratchpad "term" terminal
                <% end %>
                ]
   where
-    scratchpad name cmd = Scratchpad.NS name (runCmd cmd)
+    scratchpad name cmd = Scratchpad.NS name (runCmd cmd name)
                                              (ManageHook.title =? name)
                                              size
 
-    runCmd cmd = "<%= local! :term_run_cmd %> " ++ cmd
+    runCmd cmd title = List.intercalate " " [ "<%= local! :term_open_cmd %>"
+                                            , "<%= local! :term_run_cmd_opt %>"
+                                            , cmd
+                                            , "<%= local! :term_title_opt %>"
+                                            , title
+                                            ]
 
     size = Scratchpad.customFloating scratchpadSize
+
 
 -- ───────────────────────────────────────────────────── key bindings •2.09• ──┤
 
