@@ -41,7 +41,7 @@ end %>
 
 style "taffybar-default" {
 
-  <%= local!(:colorscheme).map do |name, hex| %>
+  <% local!(:colorscheme).each do |name, hex| %>
   color["<%= name %>"] = "<%= hex %>"
   <% end %>
 
