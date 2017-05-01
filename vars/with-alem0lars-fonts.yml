@@ -3,10 +3,9 @@ xmonad:
     name: Hack
     size: 10
 
-xmobar:
+taffybar:
   font:
     name: Hack
-    size: 9
 
 
 # vim: set filetype=eruby.yaml :

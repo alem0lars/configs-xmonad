@@ -1,0 +1,7 @@
+taffybar:
+  height: 28
+  font:
+    size: 7
+
+
+# vim: set filetype=eruby.yaml :

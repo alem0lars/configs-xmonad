@@ -30,8 +30,9 @@
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
-  variable :"net.eth",  as: :eth
-  variable :"net.wifi", as: :wifi
+  variable :"taffybar.height", as: :bar_height
+  variable :"taffybar.net.eth", as: :eth
+  variable :"taffybar.net.wifi", as: :wifi
   prefixed(:"xmonad.", as: nil) do
     variable(:colorscheme) do |colorscheme|
       Hash[colorscheme.map { |name, hex| [name.camelize, hex] }]
@@ -89,7 +90,8 @@ main = do
       wifi = netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
       <% end %>
   defaultTaffybar defaultTaffybarConfig
-      { startWidgets = [ pager
+      { barHeight = <%= local! :bar_height %>
+      , startWidgets = [ pager
                        ]
       , endWidgets = [ tray
                      , clock
