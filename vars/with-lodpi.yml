@@ -1,3 +1,10 @@
+xmonad:
+  font:
+    size: 9
+  layouts:
+    tabbed:
+      height: 16
+
 taffybar:
   height: 16
   font:

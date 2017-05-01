@@ -1,7 +1,6 @@
 xmonad:
   font:
     name: Hack
-    size: 10
 
 taffybar:
   font:
