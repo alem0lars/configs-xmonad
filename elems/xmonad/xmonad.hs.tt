@@ -384,7 +384,7 @@ basicManageHook  = XM.composeAll . concat $
 
     shifts = [ (XWindowClass "Firefox",                   workspaces !! 0)
              , (XWindowClass "chromium-browser-chromium", workspaces !! 0)
-             , (XWindowClass "Slack",                     workspaces !! 6)
+             , (XWindowClass "Slack",                     workspaces !! 5)
              ]
 
 -- ────────────────────────────────────────────────────── scratchpads •2.08• ──┤
