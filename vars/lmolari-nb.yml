@@ -1,7 +1,10 @@
-# => inherits: generic, with-taffybar, with-alem0lars-fonts, with-openterm, with-chromium, with-colorscheme-jellybeans, with-langs <= #
+# => inherits: generic, with-taffybar, with-lodpi, with-alem0lars-fonts, with-openterm, with-chromium, with-colorscheme-jellybeans, with-langs <= #
 
-net:
-  eth:  'enp62s0u1u4'
-  wifi: 'wlp2s0'
+
+taffybar:
+  net:
+    eth:  enp62s0u1u4
+    wifi: wlp2s0
+
 
 # vim: set filetype=eruby.yaml :

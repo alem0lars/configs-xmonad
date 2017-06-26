@@ -33,6 +33,8 @@
   variable :web_browser
 
   prefixed(:"xmonad.", as: nil) do
+    variable :"layouts.tabbed.height", as: :tabbed_height
+
     variable :"terminal.open_cmd",    as: :term_open_cmd
     variable :"terminal.run_cmd_opt", as: :term_run_cmd_opt
     variable :"terminal.title_opt",   as: :term_title_opt
@@ -238,6 +240,7 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
                  , Tabbed.urgentTextColor     = toHex urgentFgColor
                  , Tabbed.urgentBorderColor   = toHex urgentBorderColor
                  , Tabbed.fontName            = toXft font
+                 , Tabbed.decoHeight          = <%= local! :tabbed_height %>
                  }
 
     refLayouts       = tabbedLayout
@@ -743,7 +746,7 @@ keymaps  = [ -- ─────────────────────�
   where
     numericKeys = [xK_1 .. xK_9] ++ [xK_0]
 
-    programLauncher = "dmenu_run"
+    programLauncher = "dmenu_run -fn " ++ toDashed font
 
     recompileXMonad = " if type xmonad; then"
                    ++ "   xmonad --recompile &&"
@@ -1036,7 +1039,12 @@ data Font = Font
 toXft :: Font
       -> String
 
-toXft (Font name size) = "xft:" ++ name ++ "-" ++ show size
+toXft font = "xft:" ++ toDashed font
+
+toDashed :: Font
+         -> String
+
+toDashed (Font name size) = name ++ "-" ++ show size
 
 -- ───────────────────────────────────────────────────── misc - color •3.01• ──┤
 

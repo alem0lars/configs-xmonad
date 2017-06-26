@@ -1,0 +1,14 @@
+xmonad:
+  font:
+    size: 7
+  layouts:
+    tabbed:
+      height: 28
+
+taffybar:
+  height: 28
+  font:
+    size: 7
+
+
+# vim: set filetype=eruby.yaml :

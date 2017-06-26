@@ -30,6 +30,9 @@
 #                                                                              │
 # ─────────────────────────────────────────────────────────────────────────────┤
 <% define_locals do
+  variable :"taffybar.font.name", as: :font_name
+  variable :"taffybar.font.size", as: :font_size
+
   prefixed(:"xmonad.", as: nil) do
     variable(:colorscheme) do |colorscheme|
       Hash[colorscheme.map { |name, hex| [name.camelize, hex] }]
@@ -45,11 +48,11 @@ style "taffybar-default" {
   color["<%= name %>"] = "<%= hex %>"
   <% end %>
 
-  bg[NORMAL]   = @darker_grey
+  bg[NORMAL]   = @darkerGrey
   fg[NORMAL]   = @cyan
   text[NORMAL] = @cyan
 
-  bg[PRELIGHT] = @darker_grey
+  bg[PRELIGHT] = @darkerGrey
   fg[PRELIGHT] = @green
 }
 
@@ -65,6 +68,8 @@ style "taffybar-notification-button" = "taffybar-default" {
 widget "Taffybar*" style "taffybar-default"
 widget "Taffybar*WindowSwitcher*label" style "taffybar-active-window"
 widget "*NotificationCloseButton" style "taffybar-notification-button"
+
+gtk-font-name="<%= local! :font_name -%> <%= local! :font_size -%>"
 
 
 # vim: set filetype=eruby :
