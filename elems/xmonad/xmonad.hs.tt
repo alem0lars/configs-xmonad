@@ -163,7 +163,7 @@ import qualified XMonad.StackSet as StackSet
 import qualified XMonad.Util.NamedScratchpad as Scratchpad
 import qualified XMonad.Util.Run             as Run
 
-import qualified System.Taffybar.Hooks.PagerHints as Taffybar
+-- TODO import qualified System.Taffybar.Hooks.PagerHints as Taffybar
 
 -- ────────────────────────────────────────────────────────────────────────────┘
 
@@ -173,7 +173,7 @@ import qualified System.Taffybar.Hooks.PagerHints as Taffybar
 main :: IO ()
 main  = do xmonad $ UrgencyHook.withUrgencyHook UrgencyHook.NoUrgencyHook
                   $ EWMH.ewmh
-                  $ Taffybar.pagerHints
+-- TODO                 $ Taffybar.pagerHints
                   $ xConfig
   where
     xConfig = XM.defaultConfig
