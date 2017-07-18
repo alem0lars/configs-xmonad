@@ -1,4 +1,4 @@
-web_browser: 'chromium-browser'
+web_browser: chromium
 
 
 # vim: set filetype=eruby.yaml :
