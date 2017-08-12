@@ -270,9 +270,9 @@ workspaces  = zipWith (++) workspaceIds
                    ]
 
     workspaceNames = [ "ref"
-                     , "wf"
-                     , "wf"
-                     , "wfs"
+                     , "edit"
+                     , "act"
+                     , "supp"
                      , "org"
                      , "social"
                      , "play"
