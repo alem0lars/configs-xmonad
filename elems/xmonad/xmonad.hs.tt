@@ -152,6 +152,7 @@ import qualified XMonad.Layout.NoBorders             as NoBorders
 import qualified XMonad.Layout.PerWorkspace          as PerWorkspace
 import qualified XMonad.Layout.Reflect               as Reflect
 import qualified XMonad.Layout.Tabbed                as Tabbed
+import qualified XMonad.Layout.BinarySpacePartition  as BinarySpacePartition
 import qualified XMonad.Layout.WorkspaceDir          as WorkspaceDir
 
 import qualified XMonad.ManageHook as ManageHook
@@ -215,9 +216,9 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
            $ MultiToggle.mkToggle1 MultiToggleI.NOBORDERS -- remove borders
            $ MultiToggle.mkToggle1 MultiToggleI.MIRROR    -- mirror layout
            $ PerWorkspace.onWorkspace (workspaces !! 0) refLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 1) wflowLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 2) wflowLayouts
-           $ PerWorkspace.onWorkspace (workspaces !! 3) wflowsuppLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 1) editLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 2) actLayouts
+           $ PerWorkspace.onWorkspace (workspaces !! 3) suppLayouts
            $ PerWorkspace.onWorkspace (workspaces !! 4) orgLayouts
            $ PerWorkspace.onWorkspace (workspaces !! 5) socialLayouts
            $ PerWorkspace.onWorkspace (workspaces !! 6) playLayouts
@@ -243,16 +244,17 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
                  , Tabbed.decoHeight          = <%= local! :tabbed_height %>
                  }
 
-    refLayouts       = tabbedLayout
-    wflowLayouts     = tabbedLayout
-    wflowsuppLayouts = tabbedLayout
-    orgLayouts       = tabbedLayout
-    socialLayouts    = tabbedLayout
-    playLayouts      = tabbedLayout
-    mgmtLayouts      = tabbedLayout
-    miscLayouts      = tabbedLayout
-    vmLayouts        = tabbedLayout
-    defaultLayouts   = tabbedLayout
+    refLayouts       = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    editLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    actLayouts       = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    suppLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    orgLayouts       = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    socialLayouts    = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    playLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    mgmtLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    miscLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    vmLayouts        = tabbedLayout ||| BinarySpacePartition.emptyBSP
+    defaultLayouts   = tabbedLayout ||| BinarySpacePartition.emptyBSP
 
 -- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
 
@@ -553,6 +555,24 @@ keymaps  = [ -- ─────────────────────�
              )
            | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
            ]
+-- TODO
+--           ++
+--            []
+-- , ((modm .|. altMask,               xK_l     ), sendMessage $ ExpandTowards R)
+-- , ((modm .|. altMask,               xK_h     ), sendMessage $ ExpandTowards L)
+-- , ((modm .|. altMask,               xK_j     ), sendMessage $ ExpandTowards D)
+-- , ((modm .|. altMask,               xK_k     ), sendMessage $ ExpandTowards U)
+-- , ((modm .|. altMask .|. ctrlMask , xK_l     ), sendMessage $ ShrinkFrom R)
+-- , ((modm .|. altMask .|. ctrlMask , xK_h     ), sendMessage $ ShrinkFrom L)
+-- , ((modm .|. altMask .|. ctrlMask , xK_j     ), sendMessage $ ShrinkFrom D)
+-- , ((modm .|. altMask .|. ctrlMask , xK_k     ), sendMessage $ ShrinkFrom U)
+-- , ((modm,                           xK_r     ), sendMessage Rotate)
+-- , ((modm,                           xK_s     ), sendMessage Swap)
+-- , ((modm,                           xK_n     ), sendMessage FocusParent)
+-- , ((modm .|. ctrlMask,              xK_n     ), sendMessage SelectNode)
+-- , ((modm .|. shiftMask,             xK_n     ), sendMessage MoveNode)
+-- , ((myModMask,               xK_a),     sendMessage Balance)
+-- , ((myModMask .|. shiftMask, xK_a),     sendMessage Equalize)
            ++
            [ -- ───────────────────── float ← window management •2.09.01.08• ──┤
              ( (metaMask, xK_t)

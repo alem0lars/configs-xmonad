@@ -33,10 +33,9 @@
   variable :"taffybar.height", as: :bar_height
   variable :"taffybar.net.eth", as: :eth
   variable :"taffybar.net.wifi", as: :wifi
-  prefixed(:"xmonad.", as: nil) do
-    variable(:colorscheme) do |colorscheme|
-      Hash[colorscheme.map { |name, hex| [name.camelize, hex] }]
-    end
+  variable :"taffybar.disks", as: :disks, default: []
+  prefixed :"xmonad.", as: nil do
+    variable :colorscheme
   end
 end %>
 -- ────────────────────────────────────────────────────────────────────────────┘
@@ -50,7 +49,9 @@ import System.Taffybar.TaffyPager
 import System.Taffybar.SimpleClock
 import System.Taffybar.Weather
 import System.Taffybar.MPRIS
-import System.Taffybar.NetMonitor
+import qualified System.Taffybar.NetMonitor as NetMonitor
+import qualified System.Taffybar.DiskIOMonitor as DiskIOMonitor
+import qualified System.Taffybar.MPRIS2 as MPRIS2
 
 import System.Taffybar.Widgets.PollingBar
 import System.Taffybar.Widgets.PollingGraph
@@ -67,39 +68,49 @@ cpuCallback = do
   return [totalLoad, systemLoad]
 
 main = do
-  let memCfg = defaultGraphConfig { graphDataColors = [(1, 0, 0, 1)]
-                                  , graphLabel = Just "mem"
-                                  }
-      cpuCfg = defaultGraphConfig { graphDataColors = [ (0, 1, 0, 1)
-                                                      , (1, 0, 1, 0.5)
-                                                      ]
-                                  , graphLabel = Just "cpu"
-                                  }
-      batCfg = defaultBatteryConfig
+  let diskConfig name = defaultGraphConfig { graphLabel = Just name
+                                           }
+      memoryConfig = defaultGraphConfig { graphDataColors = [(1, 0, 0, 1)]
+                                        , graphLabel = Just "mem"
+                                        }
+      cpuConfig = defaultGraphConfig { graphDataColors = [ (0, 1, 0, 1)
+                                                         , (1, 0, 1, 0.5)
+                                                         ]
+                                     , graphLabel = Just "cpu"
+                                     }
+      batteryConfig = defaultBatteryConfig
+
   let clock = textClockNew Nothing "<span fgcolor='orange'>%a %b %_d %H:%M</span>" 1
       pager = taffyPagerNew defaultPagerConfig
-      mpris = mprisNew defaultMPRISConfig
-      mem = pollingGraphNew memCfg 5 memCallback
-      cpu = pollingGraphNew cpuCfg 5 cpuCallback
-      bat = batteryBarNew batCfg 30
+      mpris = MPRIS2.mpris2New
+      mem = pollingGraphNew memoryConfig 5 memCallback
+      cpu = pollingGraphNew cpuConfig 5 cpuCallback
+      bat = batteryBarNew batteryConfig 30
+      <% local!(:disks).each do |disk| %>
+      disk<%= disk.capitalize %> = DiskIOMonitor.dioMonitorNew (diskConfig "<%= disk %>") 0.5 "<%= disk %>"
+      <% end %>
       tray = systrayNew
       <% if local? :eth %>
-      eth = netMonitorNewWith 5 "<%= local! :eth %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+      eth = NetMonitor.netMonitorNewWith 5 "<%= local! :eth %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
       <% end %>
       <% if local? :wifi %>
-      wifi = netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+      wifi = NetMonitor.netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
       <% end %>
+
   defaultTaffybar defaultTaffybarConfig
       { barHeight = <%= local! :bar_height %>
       , startWidgets = [ pager
                        ]
       , endWidgets = [ tray
                      , clock
-                     , mem
-                     , cpu
                      , bat
                      <%= local?(:wifi) ? ", wifi" : "" %>
                      <%= local?(:eth) ? ", eth" : "" %>
+                     <% local!(:disks).reverse.each do |disk| %>
+                     <%= ", disk#{disk.capitalize}" %>
+                     <% end %>
+                     , mem
+                     , cpu
                      , mpris
                      ]
       }
