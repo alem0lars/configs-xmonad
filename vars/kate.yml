@@ -2,9 +2,54 @@
 
 
 taffybar:
+
+  clock:
+    delay: 1
+    date:
+      fg_color: yellow
+    time:
+      fg_color: yellow
+
+  pager:
+    widget_separator:
+      symbol: ' | '
+      fg_color: magenta
+    active_layout:
+      fg_color: dark_green
+    active_workspace:
+      fg_color: green
+    visible_workspace:
+      fg_color: cyan
+    empty_workspace:
+      fg_color: grey
+    hidden_workspace:
+      fg_color: cyan
+    urgent_workspace:
+      fg_color: orange
+    active_window:
+      max_length: 50
+
+  battery:
+    polling_period: 30
+
+    padding: 4
+    width:   20
+
+    bg_color:     darker_grey
+    border_color: grey
+
+    critical_color: red
+    lower_color:    dark_red
+    low_color:      orange
+    medium_color:   yellow
+    high_color:     blue
+    higher_color:   dark_green
+    full_color:     green
+
   net:
     eth:  enp0s25
     wifi: wlp3s0
+
   disks:
     - sda
     - sdb

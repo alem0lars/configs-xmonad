@@ -29,91 +29,319 @@
 -- limitations under the License.                                              │
 --                                                                             │
 -- ────────────────────────────────────────────────────────────────────────────┤
-<% define_locals do
-  variable :"taffybar.height", as: :bar_height
-  variable :"taffybar.net.eth", as: :eth
-  variable :"taffybar.net.wifi", as: :wifi
-  variable :"taffybar.disks", as: :disks, default: []
-  prefixed :"xmonad.", as: nil do
-    variable :colorscheme
+<%
+  define_locals do
+    variable "taffybar.height", as: :bar_height
+
+    variable "taffybar.clock.delay", as: :clock_delay
+    variable "taffybar.pager.widget_separator.symbol",
+             as: :pager_widget_separator_symbol
+    variable "taffybar.pager.active_window.max_length",
+             as: :pager_active_window_max_length
+
+    variable "taffybar.battery.padding",        as: :battery_padding
+    variable "taffybar.battery.width",          as: :battery_width
+    variable "taffybar.battery.polling_period", as: :battery_polling_period
+
+    variable "taffybar.net.eth", as: :eth
+    variable "taffybar.net.wifi", as: :wifi
+    variable "taffybar.disks", as: :disks, default: []
+
+    prefixed "xmonad.", as: nil do
+      variable :colorscheme
+    end
   end
-end %>
+
+  def color_for(subject, kind, default: nil)
+    info = get_var! "taffybar.#{subject}".to_sym
+    color_name = info["#{kind}_color".to_sym]
+    return default unless color_name # color is optional.
+    local!(:colorscheme)[color_name.to_sym]
+  end
+
+  def color_for!(subject, kind)
+    color = color_for(subject, kind)
+    error "Failed to get color for subject=#{subject} kind=#{kind}" unless color
+    color
+  end
+
+  def span(content, subject)
+    puts subject
+    fg_color = color_for(subject, :fg)
+    bg_color = color_for(subject, :bg)
+
+    attrs  = []
+    attrs << "fgcolor='#{fg_color}'" if fg_color
+    attrs << "bgcolor='#{bg_color}'" if bg_color
+
+    "<span #{attrs.join(" ")}>#{content}</span>"
+  end
+%>
 -- ────────────────────────────────────────────────────────────────────────────┘
 
 
-import System.Taffybar
+-- ┌───────────────────────────────────────────────────────────────────────────┐
+-- │                            TABLE OF CONTENTS                              │
+-- ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤
+-- │                                                                           │
+-- │ ┌──→ •1• imports                                                          │
+-- │ │                                                                         │
+-- │ ├──→ •2• widgets                                                          │
+-- │ │     │                                                                   │
+-- │ │     ├─→ •2.01• tray                                                     │
+-- │ │     ├─→ •2.02• clock                                                    │
+-- │ │     ├─→ •2.03• pager                                                    │
+-- │ │     ├─→ •2.04• battery                                                  │
+-- │ │     ├─→ •2.05• network                                                  │
+-- │ │     ├─→ •2.06• disk                                                     │
+-- │ │     ├─→ •2.07• memory                                                   │
+-- │ │     ├─→ •2.08• cpu                                                      │
+-- │ │     └─→ •2.09• mpris                                                    │
+-- │ │                                                                         │
+-- │ ├──→ •3• main                                                             │
+-- │ │                                                                         │
+-- │ └──→ •4• utilities                                                        │
+-- │                                                                           │
+-- └───────────────────────────────────────────────────────────────────────────┘
 
-import System.Taffybar.Battery
-import System.Taffybar.Systray
-import System.Taffybar.TaffyPager
-import System.Taffybar.SimpleClock
-import System.Taffybar.Weather
-import System.Taffybar.MPRIS
-import qualified System.Taffybar.NetMonitor as NetMonitor
+
+-- ───────────────────────────────────────────────────────────── imports •1• ──┐
+
+import qualified Numeric as Numeric
+
+import qualified Data.List as List
+
+import qualified Graphics.UI.Gtk as Gtk
+
+import qualified System.Taffybar as Taffybar
+
+import qualified System.Taffybar.Battery       as Battery
 import qualified System.Taffybar.DiskIOMonitor as DiskIOMonitor
-import qualified System.Taffybar.MPRIS2 as MPRIS2
+import qualified System.Taffybar.MPRIS2        as MPRIS2
+import qualified System.Taffybar.NetMonitor    as NetMonitor
+import qualified System.Taffybar.SimpleClock   as SimpleClock
+import qualified System.Taffybar.Systray       as Systray
+import qualified System.Taffybar.Pager         as Pager
+import qualified System.Taffybar.TaffyPager    as TaffyPager
+import qualified System.Taffybar.Weather       as Weather
 
-import System.Taffybar.Widgets.PollingBar
-import System.Taffybar.Widgets.PollingGraph
+import qualified System.Taffybar.Widgets.PollingBar   as PollingBar
+import qualified System.Taffybar.Widgets.PollingGraph as PollingGraph
 
-import System.Information.Memory
-import System.Information.CPU
+import qualified System.Information.Memory as Memory
+import qualified System.Information.CPU    as CPU
 
-memCallback = do
-  mi <- parseMeminfo
-  return [memoryUsedRatio mi]
+-- ────────────────────────────────────────────────────────────────────────────┘
 
-cpuCallback = do
-  (userLoad, systemLoad, totalLoad) <- cpuLoad
-  return [totalLoad, systemLoad]
+
+-- ───────────────────────────────────────────────────────────── widgets •2• ──┐
+
+-- ───────────────────────────────────────────────────────────── tray •2.01• ──┤
+
+trayWidget :: IO Gtk.Widget
+trayWidget  = Systray.systrayNew
+
+-- ──────────────────────────────────────────────────────────── clock •2.02• ──┤
+
+clockWidget :: IO Gtk.Widget
+clockWidget  = SimpleClock.textClockNewWith config format delay
+  where
+    config = SimpleClock.ClockConfig
+           { SimpleClock.clockTimeZone   = Nothing
+           , SimpleClock.clockTimeLocale = Nothing
+           }
+    format = List.intercalate " "
+           [ "<%= span "%m-%d", "clock.date" %>"
+           , "<%= span "%H:%M", "clock.time" %>"
+           ]
+    delay  = <%= local! :clock_delay %>
+
+-- ──────────────────────────────────────────────────────────── pager •2.03• ──┤
+
+pagerWidget :: IO Gtk.Widget
+pagerWidget  = TaffyPager.taffyPagerNew TaffyPager.defaultPagerConfig
+             { TaffyPager.activeLayout     = activeLayout
+             , TaffyPager.activeWorkspace  = activeWorkspace
+             , TaffyPager.visibleWorkspace = visibleWorkspace
+             , TaffyPager.emptyWorkspace   = emptyWorkspace
+             , TaffyPager.hiddenWorkspace  = hiddenWorkspace
+             , TaffyPager.urgentWorkspace  = urgentWorkspace
+             , TaffyPager.widgetSep        = widgetSeparator
+             , TaffyPager.activeWindow     = activeWindow
+             }
+  where
+    activeLayout = Pager.colorize
+                    "<%= color_for "pager.active_layout", :fg %>"
+                    "<%= color_for "pager.active_layout", :bg %>"
+                 . Pager.escape
+
+    activeWorkspace = Pager.colorize
+                        "<%= color_for "pager.active_workspace", :fg %>"
+                        "<%= color_for "pager.active_workspace", :bg %>"
+                    . Pager.escape
+
+    visibleWorkspace = Pager.colorize
+                         "<%= color_for "pager.visible_workspace", :fg %>"
+                         "<%= color_for "pager.visible_workspace", :bg %>"
+                     . Pager.escape
+
+    emptyWorkspace = Pager.colorize
+                       "<%= color_for "pager.empty_workspace", :fg %>"
+                       "<%= color_for "pager.empty_workspace", :bg %>"
+                   . Pager.escape
+
+    hiddenWorkspace = Pager.colorize
+                        "<%= color_for "pager.hidden_workspace", :fg %>"
+                        "<%= color_for "pager.hidden_workspace", :bg %>"
+                    . Pager.escape
+
+    urgentWorkspace = Pager.colorize
+                        "<%= color_for "pager.urgent_workspace", :fg %>"
+                        "<%= color_for "pager.urgent_workspace", :bg %>"
+                    . Pager.escape
+
+    widgetSeparator = Pager.colorize
+                        "<%= color_for "pager.widget_separator", :fg %>"
+                        "<%= color_for "pager.widget_separator", :bg %>"
+                        "<%= local! :pager_widget_separator_symbol %>"
+
+    activeWindow = (Pager.wrap " " " ")
+                 . Pager.escape
+                 . Pager.shorten <%= local! :pager_active_window_max_length %>
+
+-- ────────────────────────────────────────────────────────── battery •2.04• ──┤
+
+batteryConfig :: PollingBar.BarConfig
+batteryConfig  = Battery.defaultBatteryConfig
+               { PollingBar.barBorderColor     = batteryBorderColor
+               , PollingBar.barBackgroundColor = batteryBackgroundColor
+               , PollingBar.barColor           = batteryColor
+               , PollingBar.barPadding         = batteryPadding
+               , PollingBar.barWidth           = batteryWidth
+               }
+  where
+    batteryColor percentage
+      | percentage < 0.10 = hexToRgb "<%= color_for! "battery", :critical %>"
+      | percentage < 0.20 = hexToRgb "<%= color_for! "battery", :lower %>"
+      | percentage < 0.40 = hexToRgb "<%= color_for! "battery", :low %>"
+      | percentage < 0.60 = hexToRgb "<%= color_for! "battery", :medium %>"
+      | percentage < 0.80 = hexToRgb "<%= color_for! "battery", :high %>"
+      | percentage < 0.98 = hexToRgb "<%= color_for! "battery", :higher %>"
+      | otherwise         = hexToRgb "<%= color_for! "battery", :full %>"
+
+    batteryBorderColor     = hexToRgb "<%= color_for! "battery", :border %>"
+    batteryBackgroundColor = const $ hexToRgb "<%= color_for! "battery", :bg %>"
+
+    batteryPadding = <%= local! :battery_padding %>
+    batteryWidth   = <%= local! :battery_width %>
+
+    batteryDirection = PollingBar.VERTICAL
+
+batteryWidget :: IO Gtk.Widget
+batteryWidget  = Battery.batteryBarNew batteryConfig batteryPollingPeriod
+  where
+    batteryPollingPeriod = <%= local! :battery_polling_period %>
+
+-- ────────────────────────────────────────────────────────── network •2.05• ──┤
+
+<% if local? :eth %>
+ethWidget :: IO Gtk.Widget
+ethWidget  = NetMonitor.netMonitorNewWith 5 "<%= local! :eth %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+<% end %>
+
+<% if local? :wifi %>
+wifiWidget :: IO Gtk.Widget
+wifiWidget  = NetMonitor.netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+<% end %>
+
+-- ───────────────────────────────────────────────────────────── disk •2.06• ──┤
+
+diskConfig name = PollingGraph.defaultGraphConfig
+                { PollingGraph.graphLabel = Just name
+                }
+
+<% local!(:disks).each do |disk| %>
+disk<%= disk.capitalize %>Widget :: IO Gtk.Widget
+disk<%= disk.capitalize %>Widget  = DiskIOMonitor.dioMonitorNew (diskConfig "<%= disk %>") 0.5 "<%= disk %>"
+<% end %>
+
+-- ─────────────────────────────────────────────────────────── memory •2.07• ──┤
+
+memoryCallback :: IO [Double]
+memoryCallback  = do memoryInfo <- Memory.parseMeminfo
+                     return [Memory.memoryUsedRatio memoryInfo]
+
+memoryConfig name = PollingGraph.defaultGraphConfig
+                  { PollingGraph.graphDataColors = [(1, 0, 0, 1)]
+                  , PollingGraph.graphLabel = Just "mem"
+                  }
+
+memoryWidget :: IO Gtk.Widget
+memoryWidget  = PollingGraph.pollingGraphNew (memoryConfig "mem") 5 memoryCallback
+
+-- ────────────────────────────────────────────────────────────── cpu •2.08• ──┤
+
+cpuCallback :: IO [Double]
+cpuCallback  = do (userLoad, systemLoad, totalLoad) <- CPU.cpuLoad
+                  return [totalLoad, systemLoad]
+
+cpuConfig name = PollingGraph.defaultGraphConfig
+               { PollingGraph.graphDataColors = [ (0, 1, 0, 1)
+                                                , (1, 0, 1, 0.5)
+                                                ]
+               , PollingGraph.graphLabel = Just name
+               }
+
+cpuWidget :: IO Gtk.Widget
+cpuWidget  = PollingGraph.pollingGraphNew (cpuConfig "cpu") 5 cpuCallback
+
+-- ──────────────────────────────────────────────────────────── mpris •2.09• ──┤
+
+mprisWidget :: IO Gtk.Widget
+mprisWidget  = MPRIS2.mpris2New
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- ──────────────────────────────────────────────────────────────── main •3• ──┐
 
 main = do
-  let diskConfig name = defaultGraphConfig { graphLabel = Just name
-                                           }
-      memoryConfig = defaultGraphConfig { graphDataColors = [(1, 0, 0, 1)]
-                                        , graphLabel = Just "mem"
-                                        }
-      cpuConfig = defaultGraphConfig { graphDataColors = [ (0, 1, 0, 1)
-                                                         , (1, 0, 1, 0.5)
-                                                         ]
-                                     , graphLabel = Just "cpu"
-                                     }
-      batteryConfig = defaultBatteryConfig
-
-  let clock = textClockNew Nothing "<span fgcolor='orange'>%a %b %_d %H:%M</span>" 1
-      pager = taffyPagerNew defaultPagerConfig
-      mpris = MPRIS2.mpris2New
-      mem = pollingGraphNew memoryConfig 5 memCallback
-      cpu = pollingGraphNew cpuConfig 5 cpuCallback
-      bat = batteryBarNew batteryConfig 30
-      <% local!(:disks).each do |disk| %>
-      disk<%= disk.capitalize %> = DiskIOMonitor.dioMonitorNew (diskConfig "<%= disk %>") 0.5 "<%= disk %>"
-      <% end %>
-      tray = systrayNew
-      <% if local? :eth %>
-      eth = NetMonitor.netMonitorNewWith 5 "<%= local! :eth %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
-      <% end %>
-      <% if local? :wifi %>
-      wifi = NetMonitor.netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
-      <% end %>
-
-  defaultTaffybar defaultTaffybarConfig
-      { barHeight = <%= local! :bar_height %>
-      , startWidgets = [ pager
-                       ]
-      , endWidgets = [ tray
-                     , clock
-                     , bat
-                     <%= local?(:wifi) ? ", wifi" : "" %>
-                     <%= local?(:eth) ? ", eth" : "" %>
-                     <% local!(:disks).reverse.each do |disk| %>
-                     <%= ", disk#{disk.capitalize}" %>
-                     <% end %>
-                     , mem
-                     , cpu
-                     , mpris
-                     ]
+  Taffybar.defaultTaffybar Taffybar.defaultTaffybarConfig
+      { Taffybar.barHeight    = <%= local! :bar_height %>
+      , Taffybar.startWidgets = [ pagerWidget
+                                ]
+      , Taffybar.endWidgets   = [ trayWidget
+                                , clockWidget
+                                , batteryWidget
+                                <%= local?(:wifi) ? ", wifiWidget" : "" %>
+                                <%= local?(:eth) ? ", ethWidget" : "" %>
+                                <% local!(:disks).reverse.each do |disk| %>
+                                <%= ", disk#{disk.capitalize}Widget" %>
+                                <% end %>
+                                , memoryWidget
+                                , cpuWidget
+                                , mprisWidget
+                                ]
       }
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- ─────────────────────────────────────────────────────────── utilities •4• ──┐
+
+hexToRgb     :: String -> (Double, Double, Double)
+hexToRgb hex  = ( (parseHex $ red   hex) / 255.0
+                , (parseHex $ green hex) / 255.0
+                , (parseHex $ blue  hex) / 255.0
+                )
+  where
+    parseHex str = fst $ Numeric.readHex str !! 0
+
+    red   hex = drop 1 . take 3 $ hex
+    green hex = drop 3 . take 5 $ hex
+    blue  hex = drop 5 . take 7 $ hex
+
+-- ────────────────────────────────────────────────────────────────────────────┘
 
 
 -- vim: set filetype=eruby.haskell :
