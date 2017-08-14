@@ -49,15 +49,15 @@ style "taffybar-default" {
   <% end %>
 
   bg[NORMAL]   = @darkerGrey
-  fg[NORMAL]   = @cyan
-  text[NORMAL] = @cyan
+  fg[NORMAL]   = @grey
+  text[NORMAL] = @grey
 
   bg[PRELIGHT] = @darkerGrey
-  fg[PRELIGHT] = @green
+  fg[PRELIGHT] = @grey
 }
 
 style "taffybar-active-window" = "taffybar-default" {
-  fg[NORMAL] = @green
+  fg[NORMAL] = @grey
 }
 
 style "taffybar-notification-button" = "taffybar-default" {

@@ -63,11 +63,11 @@ taffybar:
       out_fg_color:  magenta
 
   disks:
-    - name: sda
+    - name: \x26C1 \x03B1
       device: sda
       polling_period: 0.5
       name_fg_color: blue
-    - name: sdb
+    - name: \x26C1 \x03B2
       device: sdb
       polling_period: 0.5
       name_fg_color: blue

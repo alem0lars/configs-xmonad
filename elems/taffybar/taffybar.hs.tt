@@ -1,3 +1,4 @@
+-- encoding: UTF-8
 -- ────────────────────────────────────────────────────────────────────────────┐
 --                                                                             │
 -- Name:    elems/taffybar/taffybar.hs.tt                                      │
@@ -98,8 +99,7 @@
 -- │ │     ├─→ •2.05• network                                                  │
 -- │ │     ├─→ •2.06• disk                                                     │
 -- │ │     ├─→ •2.07• memory                                                   │
--- │ │     ├─→ •2.08• cpu                                                      │
--- │ │     └─→ •2.09• mpris                                                    │
+-- │ │     └─→ •2.08• cpu                                                      │
 -- │ │                                                                         │
 -- │ ├──→ •3• main                                                             │
 -- │ │                                                                         │
@@ -120,7 +120,6 @@ import qualified System.Taffybar as Taffybar
 
 import qualified System.Taffybar.Battery       as Battery
 import qualified System.Taffybar.DiskIOMonitor as DiskIOMonitor
-import qualified System.Taffybar.MPRIS2        as MPRIS2
 import qualified System.Taffybar.NetMonitor    as NetMonitor
 import qualified System.Taffybar.SimpleClock   as SimpleClock
 import qualified System.Taffybar.Systray       as Systray
@@ -251,19 +250,19 @@ networkWidgets :: [IO Gtk.Widget]
 networkWidgets  =
   [
 <% local!(:network).reverse.each_with_index do |network, index| %>
-  <%= index == 0 ? "  " : ", " -%>
+  <%= index == 0 ? "  " : "," -%>
   NetMonitor.netMonitorNewWith
     <%= network[:polling_period] %>
     "<%= network[:interface] %>"
     <%= network[:precision] %>
     "<%= span_for(network[:name] + ":" +
-                  " ↓" +
-                  span_for("$inMB$",  {
+                  " \\x2193" +
+                  span_for("$inKB$",  {
                     fg_color: network[:in_fg_color],
                     bg_color: network[:in_bg_color]
                   }) +
-                  " ↑" +
-                  span_for("$outMB$", {
+                  " \\x2191" +
+                  span_for("$outKB$", {
                     fg_color: network[:out_fg_color],
                     bg_color: network[:out_bg_color]
                   }),
@@ -327,11 +326,6 @@ cpuConfig name = PollingGraph.defaultGraphConfig
 cpuWidget :: IO Gtk.Widget
 cpuWidget  = PollingGraph.pollingGraphNew (cpuConfig "cpu") 5 cpuCallback
 
--- ──────────────────────────────────────────────────────────── mpris •2.09• ──┤
-
-mprisWidget :: IO Gtk.Widget
-mprisWidget  = MPRIS2.mpris2New
-
 -- ────────────────────────────────────────────────────────────────────────────┘
 
 
@@ -353,7 +347,6 @@ main = do
                                 ++
                                 [ memoryWidget
                                 , cpuWidget
-                                , mprisWidget
                                 ]
       }
 
