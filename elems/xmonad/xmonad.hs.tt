@@ -262,23 +262,23 @@ workspaces :: [String]
 workspaces  = zipWith (++) workspaceIds
             $ map (separator ++) workspaceNames
   where
-    delimiter = "•"
+    delimiter = ""
     separator = ""
 
     workspaceIds = [ (show workspaceIndex)  ++ delimiter
                    | workspaceIndex <- [1..]
                    ]
 
-    workspaceNames = [ "ref"
-                     , "edit"
-                     , "act"
-                     , "supp"
-                     , "org"
-                     , "social"
-                     , "play"
-                     , "mgmt"
-                     , "misc"
-                     , "vm"
+    workspaceNames = [ "⚛" -- reference
+                     , "✎" -- edit
+                     , "⚒" -- act
+                     , "λ" -- support (miscellaenous functions)
+                     , "♨" -- organize
+                     , "✉" -- communication
+                     , "♫" -- entertainment
+                     , "☢" -- management
+                     , "⚙" -- miscellaenous
+                     , "☯" -- virtual machines
                      ]
 
 -- ───────────────────────────────────────────────────────── log hook •2.03• ──┤

@@ -287,7 +287,7 @@ diskWidgets  =
 <% local!(:disks).reverse.each_with_index do |disk, index| %>
   <%= index == 0 ? " " : "," -%>
   DiskIOMonitor.dioMonitorNew
-    (diskConfig "<%= span_for("#{disk[:name]}:", {
+    (diskConfig "<%= span_for(disk[:name], {
                                 fg_color: disk[:name_fg_color],
                                 bg_color: disk[:name_bg_color]
                               })
