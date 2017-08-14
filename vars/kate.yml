@@ -6,9 +6,9 @@ taffybar:
   clock:
     delay: 1
     date:
-      fg_color: yellow
+      fg_color: cyan
     time:
-      fg_color: yellow
+      fg_color: cyan
 
   pager:
     widget_separator:
@@ -17,13 +17,13 @@ taffybar:
     active_layout:
       fg_color: dark_green
     active_workspace:
-      fg_color: green
+      fg_color: dark_green
     visible_workspace:
-      fg_color: cyan
+      fg_color: blue
     empty_workspace:
       fg_color: grey
     hidden_workspace:
-      fg_color: cyan
+      fg_color: blue
     urgent_workspace:
       fg_color: orange
     active_window:
@@ -46,13 +46,31 @@ taffybar:
     higher_color:   dark_green
     full_color:     green
 
-  net:
-    eth:  enp0s25
-    wifi: wlp3s0
+  network:
+    - name: eth
+      interface: enp0s25
+      precision: 1
+      polling_period: 0.5
+      name_fg_color: blue
+      in_fg_color:   magenta
+      out_fg_color:  magenta
+    - name: wls
+      interface: wlp3s0
+      precision: 1
+      polling_period: 0.5
+      name_fg_color: blue
+      in_fg_color:   magenta
+      out_fg_color:  magenta
 
   disks:
-    - sda
-    - sdb
+    - name: sda
+      device: sda
+      polling_period: 0.5
+      name_fg_color: blue
+    - name: sdb
+      device: sdb
+      polling_period: 0.5
+      name_fg_color: blue
 
 
 # vim: set filetype=eruby.yaml :

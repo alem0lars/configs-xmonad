@@ -43,8 +43,8 @@
     variable "taffybar.battery.width",          as: :battery_width
     variable "taffybar.battery.polling_period", as: :battery_polling_period
 
-    variable "taffybar.net.eth", as: :eth
-    variable "taffybar.net.wifi", as: :wifi
+    variable "taffybar.network", as: :network
+
     variable "taffybar.disks", as: :disks, default: []
 
     prefixed "xmonad.", as: nil do
@@ -53,7 +53,11 @@
   end
 
   def color_for(subject, kind, default: nil)
-    info = get_var! "taffybar.#{subject}".to_sym
+    if subject.is_a? String
+      info = get_var! "taffybar.#{subject}".to_sym
+    else
+      info = subject
+    end
     color_name = info["#{kind}_color".to_sym]
     return default unless color_name # color is optional.
     local!(:colorscheme)[color_name.to_sym]
@@ -65,8 +69,7 @@
     color
   end
 
-  def span(content, subject)
-    puts subject
+  def span_for(content, subject)
     fg_color = color_for(subject, :fg)
     bg_color = color_for(subject, :bg)
 
@@ -151,8 +154,8 @@ clockWidget  = SimpleClock.textClockNewWith config format delay
            , SimpleClock.clockTimeLocale = Nothing
            }
     format = List.intercalate " "
-           [ "<%= span "%m-%d", "clock.date" %>"
-           , "<%= span "%H:%M", "clock.time" %>"
+           [ "<%= span_for "%m-%d", "clock.date" %>"
+           , "<%= span_for "%H:%M", "clock.time" %>"
            ]
     delay  = <%= local! :clock_delay %>
 
@@ -214,7 +217,7 @@ pagerWidget  = TaffyPager.taffyPagerNew TaffyPager.defaultPagerConfig
 batteryConfig :: PollingBar.BarConfig
 batteryConfig  = Battery.defaultBatteryConfig
                { PollingBar.barBorderColor     = batteryBorderColor
-               , PollingBar.barBackgroundColor = batteryBackgroundColor
+               , PollingBar.barBackgroundColor = batteryBgColor
                , PollingBar.barColor           = batteryColor
                , PollingBar.barPadding         = batteryPadding
                , PollingBar.barWidth           = batteryWidth
@@ -229,8 +232,8 @@ batteryConfig  = Battery.defaultBatteryConfig
       | percentage < 0.98 = hexToRgb "<%= color_for! "battery", :higher %>"
       | otherwise         = hexToRgb "<%= color_for! "battery", :full %>"
 
-    batteryBorderColor     = hexToRgb "<%= color_for! "battery", :border %>"
-    batteryBackgroundColor = const $ hexToRgb "<%= color_for! "battery", :bg %>"
+    batteryBorderColor =         hexToRgb "<%= color_for! "battery", :border %>"
+    batteryBgColor     = const $ hexToRgb "<%= color_for! "battery", :bg %>"
 
     batteryPadding = <%= local! :battery_padding %>
     batteryWidth   = <%= local! :battery_width %>
@@ -244,15 +247,33 @@ batteryWidget  = Battery.batteryBarNew batteryConfig batteryPollingPeriod
 
 -- ────────────────────────────────────────────────────────── network •2.05• ──┤
 
-<% if local? :eth %>
-ethWidget :: IO Gtk.Widget
-ethWidget  = NetMonitor.netMonitorNewWith 5 "<%= local! :eth %>" 2 "eth: ▼ $inMB$MB/s ▲ $outMB$MB/s"
+networkWidgets :: [IO Gtk.Widget]
+networkWidgets  =
+  [
+<% local!(:network).reverse.each_with_index do |network, index| %>
+  <%= index == 0 ? "  " : ", " -%>
+  NetMonitor.netMonitorNewWith
+    <%= network[:polling_period] %>
+    "<%= network[:interface] %>"
+    <%= network[:precision] %>
+    "<%= span_for(network[:name] + ":" +
+                  " ↓" +
+                  span_for("$inMB$",  {
+                    fg_color: network[:in_fg_color],
+                    bg_color: network[:in_bg_color]
+                  }) +
+                  " ↑" +
+                  span_for("$outMB$", {
+                    fg_color: network[:out_fg_color],
+                    bg_color: network[:out_bg_color]
+                  }),
+                  {
+                    fg_color: network[:name_fg_color],
+                    bg_color: network[:name_bg_color]
+                  })
+     %>"
 <% end %>
-
-<% if local? :wifi %>
-wifiWidget :: IO Gtk.Widget
-wifiWidget  = NetMonitor.netMonitorNewWith 5 "<%= local! :wifi %>" 2 "wifi: ▼ $inMB$MB/s ▲ $outMB$MB/s"
-<% end %>
+  ]
 
 -- ───────────────────────────────────────────────────────────── disk •2.06• ──┤
 
@@ -260,10 +281,21 @@ diskConfig name = PollingGraph.defaultGraphConfig
                 { PollingGraph.graphLabel = Just name
                 }
 
-<% local!(:disks).each do |disk| %>
-disk<%= disk.capitalize %>Widget :: IO Gtk.Widget
-disk<%= disk.capitalize %>Widget  = DiskIOMonitor.dioMonitorNew (diskConfig "<%= disk %>") 0.5 "<%= disk %>"
+diskWidgets :: [IO Gtk.Widget]
+diskWidgets  =
+  [
+<% local!(:disks).reverse.each_with_index do |disk, index| %>
+  <%= index == 0 ? " " : "," -%>
+  DiskIOMonitor.dioMonitorNew
+    (diskConfig "<%= span_for("#{disk[:name]}:", {
+                                fg_color: disk[:name_fg_color],
+                                bg_color: disk[:name_bg_color]
+                              })
+                 %>")
+    <%= disk[:polling_period] %>
+    "<%= disk[:device] %>"
 <% end %>
+  ]
 
 -- ─────────────────────────────────────────────────────────── memory •2.07• ──┤
 
@@ -313,12 +345,13 @@ main = do
       , Taffybar.endWidgets   = [ trayWidget
                                 , clockWidget
                                 , batteryWidget
-                                <%= local?(:wifi) ? ", wifiWidget" : "" %>
-                                <%= local?(:eth) ? ", ethWidget" : "" %>
-                                <% local!(:disks).reverse.each do |disk| %>
-                                <%= ", disk#{disk.capitalize}Widget" %>
-                                <% end %>
-                                , memoryWidget
+                                ]
+                                ++
+                                networkWidgets
+                                ++
+                                diskWidgets
+                                ++
+                                [ memoryWidget
                                 , cpuWidget
                                 , mprisWidget
                                 ]
