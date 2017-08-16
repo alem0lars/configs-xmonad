@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────┐
 #                                                                              │
-# Name:    elems/taffybar/taffybar.hs.tt                                       │
+# Name:    elems/taffybar/taffybar.rc.tt                                       │
 # Summary: Taffybar configuration.                                             │
 # Authors:                                                                     │
 #   - Alessandro Molari <molari.alessandro@gmail.com> (alem0lars)              │
