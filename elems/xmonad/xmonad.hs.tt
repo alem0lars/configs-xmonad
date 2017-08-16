@@ -1016,7 +1016,8 @@ toHex :: Color
 toHex (Hex hex) = hex
 
 data ColorPalette = ColorPalette
-                  { darkerGrey   :: Color
+                  { black        :: Color
+                  , darkerGrey   :: Color
                   , darkGrey     :: Color
                   , grey         :: Color
                   , lightGrey    :: Color

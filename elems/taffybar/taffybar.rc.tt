@@ -48,26 +48,19 @@ style "taffybar-default" {
   color["<%= name %>"] = "<%= hex %>"
   <% end %>
 
-  bg[NORMAL]   = @darkerGrey
-  fg[NORMAL]   = @grey
-  text[NORMAL] = @grey
-
-  bg[PRELIGHT] = @darkerGrey
-  fg[PRELIGHT] = @grey
-}
-
-style "taffybar-active-window" = "taffybar-default" {
-  fg[NORMAL] = @grey
-}
-
-style "taffybar-notification-button" = "taffybar-default" {
-  text[NORMAL] = @red
-  fg[NORMAL]   = @red
+  bg[NORMAL]      = @darkerGrey
+  bg[PRELIGHT]    = @darkerGrey
+  bg[ACTIVE]      = @darkerGrey
+  bg[INSENSITIVE] = @darkerGrey
+  bg[SELECTED]    = @darkerGrey
+  fg[NORMAL]      = @lightGrey
+  fg[PRELIGHT]    = @lightGrey
+  fg[ACTIVE]      = @lightGrey
+  fg[INSENSITIVE] = @lightGrey
+  fg[SELECTED]    = @lightGrey
 }
 
 widget "Taffybar*" style "taffybar-default"
-widget "Taffybar*WindowSwitcher*label" style "taffybar-active-window"
-widget "*NotificationCloseButton" style "taffybar-notification-button"
 
 gtk-font-name="<%= local! :font_name -%> <%= local! :font_size -%>"
 

@@ -1,6 +1,7 @@
 xmonad:
   colorscheme:
 
+    black:         "#000000"
     darker_grey:   "#151515"
     dark_grey:     "#1C1C1C"
     grey:          "#404040"

@@ -27,6 +27,7 @@ taffybar:
     urgent_workspace:
       fg_color: orange
     active_window:
+      fg_color: magenta
       max_length: 50
 
   battery:

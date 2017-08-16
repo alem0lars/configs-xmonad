@@ -211,7 +211,10 @@ pagerWidget  = TaffyPager.taffyPagerNew TaffyPager.defaultPagerConfig
                         "<%= color_for "pager.widget_separator", :bg %>"
                         "<%= local! :pager_widget_separator_symbol %>"
 
-    activeWindow = (Pager.wrap " " " ")
+    activeWindow = Pager.colorize
+                     "<%= color_for "pager.active_window", :fg %>"
+                     "<%= color_for "pager.active_window.", :bg %>"
+                 . (Pager.wrap " " " ")
                  . Pager.escape
                  . Pager.shorten <%= local! :pager_active_window_max_length %>
 
