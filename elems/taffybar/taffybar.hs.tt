@@ -32,6 +32,7 @@
 -- ────────────────────────────────────────────────────────────────────────────┤
 <%
   define_locals do
+    variable "taffybar.dir",    as: :base_dir
     variable "taffybar.height", as: :bar_height
 
     variable "taffybar.clock.delay", as: :clock_delay
@@ -144,6 +145,9 @@ trayWidget :: IO Gtk.Widget
 trayWidget  = Systray.systrayNew
 
 -- ──────────────────────────────────────────────────────────── clock •2.02• ──┤
+
+clockIcon :: IO Gtk.Widget
+clockIcon  = iconImageWidgetNew "clock"
 
 clockWidget :: IO Gtk.Widget
 clockWidget  = SimpleClock.textClockNewWith config format delay
@@ -304,7 +308,7 @@ memoryCallback  = do memoryInfo <- Memory.parseMeminfo
 
 memoryConfig name = PollingGraph.defaultGraphConfig
                   { PollingGraph.graphDataColors = [(1, 0, 0, 1)]
-                  , PollingGraph.graphLabel = Just "mem"
+                  , PollingGraph.graphLabel = Just name
                   }
 
 memoryWidget :: IO Gtk.Widget
@@ -338,6 +342,7 @@ main = do
                                 ]
       , Taffybar.endWidgets   = [ trayWidget
                                 , clockWidget
+                                , clockIcon
                                 , batteryWidget
                                 ]
                                 ++
@@ -353,7 +358,26 @@ main = do
 -- ────────────────────────────────────────────────────────────────────────────┘
 
 
--- ─────────────────────────────────────────────────────────── utilities •4• ──┐
+-- ────────────────────────────────────────────────────── custom widgets •4• ──┐
+
+iconPath     :: String -> FilePath
+iconPath name = "<%= local! :base_dir %>/icons/"
+             ++ name
+             ++ "-"
+             ++ (show <%= local! :bar_height %>)
+             ++ ".png"
+
+iconImageWidgetNew     :: FilePath -> IO Gtk.Widget
+iconImageWidgetNew name = do box  <- Gtk.hBoxNew False 0
+                             icon <- Gtk.imageNewFromFile $ iconPath name
+                             Gtk.boxPackStart  box icon Gtk.PackNatural 0
+                             Gtk.widgetShowAll box
+                             return $ Gtk.toWidget box
+
+-- ────────────────────────────────────────────────────────────────────────────┘
+
+
+-- ─────────────────────────────────────────────────────────── utilities •5• ──┐
 
 hexToRgb     :: String -> (Double, Double, Double)
 hexToRgb hex  = ( (parseHex $ red   hex) / 255.0
