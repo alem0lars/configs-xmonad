@@ -1,6 +1,9 @@
 # => inherits: generic, with-taffybar, with-hidpi, with-alem0lars-fonts, with-chromium, with-openterm, with-colorscheme-jellybeans, with-langs <= #
 
 
+pulseaudio:
+  default_sink_index: 1
+
 taffybar:
 
   clock:

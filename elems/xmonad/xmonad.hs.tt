@@ -32,17 +32,19 @@
 <% define_locals do
   variable :web_browser
 
-  prefixed(:"xmonad.", as: nil) do
-    variable :"layouts.tabbed.height", as: :tabbed_height
+  variable "pulseaudio.default_sink_index", as: :pa_sink
 
-    variable :"terminal.open_cmd",    as: :term_open_cmd
-    variable :"terminal.run_cmd_opt", as: :term_run_cmd_opt
-    variable :"terminal.title_opt",   as: :term_title_opt
+  prefixed("xmonad.", as: nil) do
+    variable "layouts.tabbed.height", as: :tabbed_height
+
+    variable "terminal.open_cmd",    as: :term_open_cmd
+    variable "terminal.run_cmd_opt", as: :term_run_cmd_opt
+    variable "terminal.title_opt",   as: :term_title_opt
 
     variable :workspace_dir
 
-    variable :"font.name", as: :font_name
-    variable :"font.size", as: :font_size, type: :int
+    variable "font.name", as: :font_name
+    variable "font.size", as: :font_size, type: :int
 
     variable(:colorscheme) do |colorscheme|
       Hash[colorscheme.map { |name, hex| [name.camelize, hex] }]
@@ -90,6 +92,8 @@ import Data.Bits ((.&.), bitSize, complement)
 import qualified Data.List   as List
 import qualified Data.Map    as Map
 import qualified Data.Monoid as Monoid
+
+import Graphics.X11.ExtraTypes.XF86 as XF86
 
 import XMonad ( xmonad
               , X
@@ -688,12 +692,37 @@ keymaps  = [ -- ─────────────────────�
                  ]
              , "search from selection"
              )
-             -- ───────────────────────────────────────────── help •2.09.08• ──┤
+             -- ──────────────────────────────────────────── media •2.09.08• ──┤
+           , ( (0, XF86.xF86XK_AudioLowerVolume)
+             , XM.spawn "pactl set-sink-volume <%= local! :pa_sink %> -5%"
+             , "increase sink volume"
+             )
+           , ( (0, XF86.xF86XK_AudioRaiseVolume)
+             , XM.spawn "pactl set-sink-volume <%= local! :pa_sink %> +5%"
+             , "decrease sink volume"
+             )
+           , ( (0, XF86.xF86XK_AudioMute)
+             , XM.spawn "pactl set-sink-mute <%= local! :pa_sink %> toggle"
+             , "toggle mute/unmute"
+             )
+           , ( (0, XF86.xF86XK_AudioPlay)
+             , XM.spawn "playerctl play-pause"
+             , "toggle play/pause state (in default media-player)"
+             )
+           , ( (0, XF86.xF86XK_AudioPrev)
+             , XM.spawn "playerctl previous"
+             , "play previous track (in default media-player)"
+             )
+           , ( (0, XF86.xF86XK_AudioNext)
+             , XM.spawn "playerctl next"
+             , "play next track (in default media-player)"
+             )
+             -- ───────────────────────────────────────────── help •2.09.09• ──┤
            , ( (metaMask .|. shiftMask, xK_slash)
              , XM.spawn $ xmessage help
              , "show available bindings"
              )
-             -- ───────────────────────────────────── quit/restart •2.09.09• ──┤
+             -- ───────────────────────────────────── quit/restart •2.09.10• ──┤
            , ( (metaMask, xK_q)
              , XM.spawn recompileXMonad
              , "restart xmonad"
