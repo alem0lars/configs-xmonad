@@ -37,9 +37,10 @@
   prefixed("xmonad.", as: nil) do
     variable "layouts.tabbed.height", as: :tabbed_height
 
-    variable "terminal.open_cmd",    as: :term_open_cmd
-    variable "terminal.run_cmd_opt", as: :term_run_cmd_opt
-    variable "terminal.title_opt",   as: :term_title_opt
+    variable "terminal_alt.open_cmd", as: :term_alt_open_cmd
+    variable "terminal.open_cmd",     as: :term_open_cmd
+    variable "terminal.run_cmd_opt",  as: :term_run_cmd_opt
+    variable "terminal.title_opt",    as: :term_title_opt
 
     variable :workspace_dir
 
@@ -649,6 +650,10 @@ keymaps  = [ -- ─────────────────────�
              , XM.spawn terminal
              , "open terminal"
              )
+           , ( (metaMask .|. shiftMask .|. altMask, xK_Return)
+             , XM.spawn alternativeTerminal
+             , "open alternative terminal"
+             )
            , ( (metaMask, xK_p)
              , XM.spawn programLauncher
              , "open program launcher"
@@ -936,6 +941,9 @@ mouseMaps  = [ ( (metaMask, button1)
 
 terminal :: String
 terminal  = "<%= local! :term_open_cmd %>"
+
+alternativeTerminal :: String
+alternativeTerminal  = "<%= local! :term_alt_open_cmd %>"
 
 -- whether XM.focus follows the mouse pointer
 shouldFocusFollowMouse :: Bool

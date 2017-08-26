@@ -3,6 +3,8 @@ xmonad:
     open_cmd:    openterm
     run_cmd_opt: --cmd
     title_opt:   --title
+  terminal_alt:
+    open_cmd: openterm --no-tmux
 
 
 # vim: set filetype=eruby.yaml :
