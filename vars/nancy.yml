@@ -1,4 +1,4 @@
-# => inherits: generic, with-taffybar, with-lodpi, with-alem0lars-fonts, with-firefox, with-openterm, with-colorscheme-jellybeans, with-langs <= #
+# => inherits: generic, with-taffybar, with-lodpi, with-alem0lars-fonts, with-alem0lars-kb, with-firefox, with-openterm, with-colorscheme-jellybeans, with-langs <= #
 
 
 taffybar:

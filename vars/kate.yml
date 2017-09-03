@@ -1,4 +1,4 @@
-# => inherits: generic, with-taffybar, with-hidpi, with-alem0lars-fonts, with-chromium, with-openterm, with-colorscheme-jellybeans, with-langs <= #
+# => inherits: generic, with-taffybar, with-hidpi, with-alem0lars-fonts, with-alem0lars-kb, with-chromium, with-openterm, with-colorscheme-jellybeans, with-langs <= #
 
 
 pulseaudio:

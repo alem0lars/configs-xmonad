@@ -1,0 +1,7 @@
+kb:
+  layouts:
+    main: us
+    alt: it
+
+
+# vim: set filetype=eruby.yaml :

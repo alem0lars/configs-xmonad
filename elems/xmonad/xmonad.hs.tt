@@ -34,6 +34,9 @@
 
   variable "pulseaudio.default_sink_index", as: :pa_sink
 
+  variable "kb.layouts.main", as: :kb_layout_main
+  variable "kb.layouts.alt",  as: :kb_layout_alt
+
   prefixed("xmonad.", as: nil) do
     variable "layouts.tabbed.height", as: :tabbed_height
 
@@ -111,6 +114,9 @@ import XMonad ( xmonad
               , xK_y, xK_z                            -- alphanumeric keys (5/5)
               , xK_1, xK_2, xK_3, xK_4, xK_5, xK_6         -- numeric keys (1/2)
               , xK_7, xK_8, xK_9, xK_0                     -- numeric keys (2/2)
+              , xK_F1, xK_F2, xK_F3, xK_F4, xK_F5, xK_F6  -- function keys (1/3)
+              , xK_F7, xK_F8, xK_F9, xK_F10, xK_F11       -- function keys (2/3)
+              , xK_F12                                    -- function keys (3/3)
               , xK_Tab, xK_Return, xK_grave, xK_comma        -- other keys (1/3)
               , xK_space, xK_period, xK_slash, xK_Alt_L      -- other keys (2/3)
               , xK_minus, xK_plus, xK_Super_L                -- other keys (3/3)
@@ -722,7 +728,16 @@ keymaps  = [ -- ─────────────────────�
              , XM.spawn "playerctl next"
              , "play next track (in default media-player)"
              )
-             -- ───────────────────────────────────────────── help •2.09.09• ──┤
+             -- ───────────────────────────────────────── keyboard •2.09.09• ──┤
+           , ( (metaMask, xK_F2)
+             , XM.spawn "setxkbmap <%= local! :kb_layout_alt %>"
+             , "change kb layout to alternative (<%= local! :kb_layout_alt %>)"
+             )
+           , ( (metaMask .|. shiftMask, xK_F2)
+             , XM.spawn "setxkbmap <%= local! :kb_layout_main %>"
+             , "change kb layout back to main (<%= local! :kb_layout_main %>)"
+             )
+             -- ───────────────────────────────────────────── help •2.09.10• ──┤
            , ( (metaMask .|. shiftMask, xK_slash)
              , XM.spawn $ xmessage help
              , "show available bindings"
