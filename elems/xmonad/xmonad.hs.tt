@@ -674,7 +674,7 @@ keymaps  = [ -- ─────────────────────�
              -- ─────────────────────────────────────────── search •2.09.06• ──┤
            , ( (metaMask, xK_s)
              , Submap.submap $ Map.fromList
-                 [ (kb, Search.promptSearch Prompt.defaultXPConfig action)
+                 [ (kb, Search.promptSearch xpConfig action)
                  | (kb, action, _) <- searchKeymaps
                  ]
              , "Search prompt"
