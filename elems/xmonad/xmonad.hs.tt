@@ -390,109 +390,101 @@ keymaps  = [ -- ─────────────────────�
              -- ────────────── change focus ← window management •2.09.01.01• ──┤
              ( (metaMask, xK_j)
              , XM.windows StackSet.focusDown
-             , "move focus to the next window"
+             , "Move focus to the next window"
              )
            , ( (metaMask, xK_k)
              , XM.windows StackSet.focusUp
-             , "move focus to the previous window"
-             )
-           , ( (metaMask, xK_Tab)
-             , XM.windows StackSet.focusDown
-             , "move focus to the next window"
-             )
-           , ( (metaMask .|. shiftMask, xK_Tab)
-             , XM.windows StackSet.focusUp
-             , "move focus to the previous window"
+             , "Move focus to the previous window"
              )
            ]
            ++
            [ -- ───────────────── focus nth ← window management •2.09.01.02• ──┤
-             ( (metaMask .|. altMask, key)
+             ( (metaMask .|. altMask, key) -- TODO check if it works
              , FocusNth.focusNth num
-             , "focus the window nr." ++ show num ++ " of the current workspace"
+             , "Focus the window nr." ++ show num ++ " of the current workspace"
              )
            | (key, num) <- zip numericKeys [0..]
            ]
            ++
            [ -- ────────────────────── swap ← window management •2.09.01.03• ──┤
-             ( (metaMask, xK_Return)
-             , Promote.dwmpromote
-             , "swap focused window with master window"
-             )
-           , ( (metaMask .|. shiftMask, xK_j)
+             ( (metaMask .|. shiftMask, xK_j)
              , XM.windows StackSet.swapDown
-             , "swap focused window with next window"
+             , "Swap focused window with next window"
              )
            , ( (metaMask .|. shiftMask, xK_k)
              , XM.windows StackSet.swapUp
-             , "swap focused window with previous window"
+             , "Swap focused window with previous window"
              )
            , ( (metaMask .|. altMask .|. shiftMask, xK_j)
              , RotSlaves.rotSlavesUp
-             , "rotate (up) the windows in the current stack, " ++
+             , "Rotate (up) the windows in the current stack, " ++
                "excluding the master window"
              )
            , ( (metaMask .|. altMask .|. shiftMask, xK_k)
              , RotSlaves.rotSlavesDown
-             , "rotate (down) the windows in the current stack, " ++
+             , "Rotate (down) the windows in the current stack, " ++
                "excluding the master window"
              )
-           , ( (metaMask .|. altMask, xK_Tab)
+           , ( (metaMask .|. altMask, xK_Tab) -- TODO check if worth
              , CycleWindows.cycleRecentWindows [xK_Super_L] xK_s xK_w
-             , "cycle recent windows"
+             , "Cycle recent windows"
              )
-           , ( (metaMask, xK_z)
+           , ( (metaMask, xK_z) -- TODO check if worth
              , CycleWindows.rotOpposite
-             , "opposite rotation on a stack"
+             , "Opposite rotation on a stack"
              )
            , ( (metaMask, xK_Up)
              , CycleWindows.rotUnfocusedUp
-             , "rotate windows up through the unfocused frames"
+             , "Rotate windows up through the unfocused frames"
              )
            , ( (metaMask, xK_Down)
              , CycleWindows.rotUnfocusedDown
-             , "rotate windows down through the unfocused frames"
+             , "Rotate windows down through the unfocused frames"
              )
-           , ( (metaMask .|. altMask, xK_Up) -- TODO key clash
+           , ( (metaMask .|. altMask, xK_Up)
              , CycleWindows.rotFocusedUp
-             , "rotate windows up through the focused frames"
+             , "Rotate windows up through the focused frames"
              )
-           , ( (metaMask .|. altMask, xK_Down) -- TODO key clash
+           , ( (metaMask .|. altMask, xK_Down)
              , CycleWindows.rotFocusedDown
-             , "rotate windows down through the focused frames"
+             , "Rotate windows down through the focused frames"
              )
              -- ──────────────────── resize ← window management •2.09.01.04• ──┤
            , ( (metaMask, xK_n)
              , XM.refresh
-             , "resize viewed windows to the correct size"
+             , "Resize viewed windows to the correct size"
              )
            , ( (metaMask, xK_h)
              , XM.sendMessage XM.Shrink
-             , "shrink the master area"
+             , "Shrink the master area"
              )
            , ( (metaMask, xK_l)
              , XM.sendMessage XM.Expand
-             , "expand the master area"
+             , "Expand the master area"
              )
              -- ────────────── master/slave ← window management •2.09.01.05• ──┤
+           , ( (metaMask .|. shiftMask, xK_m)
+             , Promote.dwmpromote
+             , "Swap focused window with master window"
+             )
            , ( (metaMask, xK_m)
              , XM.windows StackSet.focusMaster
-             , "move focus to the master window"
+             , "Move focus to the master window"
              )
            , ( (metaMask .|. altMask, xK_plus)
              , XM.sendMessage (XM.IncMasterN 1)
-             , "increment the number of windows in the master area"
+             , "Increment the number of windows in the master area"
              )
            , ( (metaMask .|. altMask, xK_minus)
              , XM.sendMessage (XM.IncMasterN (-1))
-             , "deincrement the number of windows in the master area"
+             , "Deincrement the number of windows in the master area"
              )
            ]
            ++
            [ -- ───────── copy to workspace ← window management •2.09.01.06• ──┤
              ( (metaMask .|. altMask .|. shiftMask, key)
              , XM.windows $ CopyWindow.copy workspace
-             , "copy focused window to workspace '" ++ workspace ++ "'" ++
+             , "Copy focused window to workspace '" ++ workspace ++ "'" ++
                " (nr." ++ show num ++ ")"
              )
            | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
@@ -501,8 +493,8 @@ keymaps  = [ -- ─────────────────────�
            [ -- ───────── move to workspace ← window management •2.09.01.07• ──┤
              ( (metaMask .|. shiftMask, key)
              , XM.windows $ StackSet.shift workspace
-             , "move focused window to workspace '" ++ workspace ++ "'" ++
-               " (nr." ++ show num ++ ")"
+             , "Move focused window to workspace '" ++ workspace ++ "' " ++
+               "(nr." ++ show num ++ ")"
              )
            | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
            ]
@@ -528,228 +520,229 @@ keymaps  = [ -- ─────────────────────�
            [ -- ───────────────────── float ← window management •2.09.01.08• ──┤
              ( (metaMask, xK_t)
              , XM.withFocused $ XM.windows . StackSet.sink
-             , "push window back into tiling"
+             , "Push window back into tiling"
              )
-           , ( (metaMask .|. altMask, xK_r)
+           , ( (metaMask .|. controlMask, xK_r)
              , Place.placeFocused floatingWindowPlacement
-             , "manually reposition focused floating window"
+             , "Manually reposition focused floating window"
              )
-           , ( (metaMask .|. altMask, xK_Left)
+           , ( (metaMask .|. controlMask, xK_Left)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.L Nothing
-             , "snap focused window to left border"
+             , "Snap focused window to left border"
              )
-           , ( (metaMask .|. altMask, xK_Right)
+           , ( (metaMask .|. controlMask, xK_Right)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.R Nothing
-             , "snap focused window to right border"
+             , "Snap focused window to right border"
              )
-           , ( (metaMask .|. altMask, xK_Up)
+           , ( (metaMask .|. controlMask, xK_Up)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.U Nothing
-             , "snap focused window to top border"
+             , "Snap focused window to top border"
              )
-           , ( (metaMask .|. altMask, xK_Down)
+           , ( (metaMask .|. controlMask, xK_Down)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.D Nothing
-             , "snap focused window to bottom border"
+             , "Snap focused window to bottom border"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_Left)
+           , ( (metaMask .|. controlMask .|. shiftMask, xK_Left)
              , XM.withFocused $ FloatSnap.snapShrink FloatSnap.L Nothing
-             , "expand focused window filling up to the left border"
+             , "Expand focused window filling up to the left border"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_Right)
+           , ( (metaMask .|. controlMask .|. shiftMask, xK_Right)
              , XM.withFocused $ FloatSnap.snapGrow FloatSnap.R Nothing
-             , "expand focused window filling up to the right border"
+             , "Expand focused window filling up to the right border"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_Up)
+           , ( (metaMask .|. controlMask .|. shiftMask, xK_Up)
              , XM.withFocused $ FloatSnap.snapShrink FloatSnap.U Nothing
-             , "expand focused window filling up to the top border"
+             , "Expand focused window filling up to the top border"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_Down)
+           , ( (metaMask .|. controlMask .|. shiftMask, xK_Down)
              , XM.withFocused $ FloatSnap.snapGrow FloatSnap.D Nothing
-             , "expand focused window filling up to the bottom border"
+             , "Expand focused window filling up to the bottom border"
              )
              -- ────────────────────────── workspace management •2.09.02•    ──┤
              -- ───────────────── switch ← workspace management •2.09.02.01• ──┤
            , ( (metaMask .|. controlMask, xK_Tab)
              , CycleRecentWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
-             , "cycle through most recent workspaces"
+             , "Cycle through most recent workspaces"
              )
            , ( (metaMask .|. controlMask, xK_Down)
              , CycleWS.prevWS
-             , "switch to previous workspace"
+             , "Switch to previous workspace"
              )
            , ( (metaMask .|. controlMask, xK_Up)
              , CycleWS.nextWS
-             , "switch to next workspace"
+             , "Switch to next workspace"
              )
            , ( (metaMask .|. controlMask, xK_z)
              , CycleWS.toggleWS
-             , "toggle to the workspace displayed previously"
+             , "Toggle to the workspace displayed previously"
              )
            ]
            ++
            [ ( (metaMask, key)
              , XM.windows $ StackSet.greedyView workspace
-             , "switch to workspace '" ++ workspace ++ "'" ++
+             , "Switch to workspace '" ++ workspace ++ "'" ++
                "(nr." ++ show num ++ ")"
              )
            | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
            ]
            ++
-           [ -- ──────────── move window ← workspace management •2.09.02.02• ──┤
-             ( (metaMask .|. controlMask .|. shiftMask, xK_Down)
-             , CycleWS.shiftToPrev
-             , "move focused window to previous workspace"
-             )
-           , ( (metaMask .|. controlMask .|. shiftMask, xK_Up)
-             , CycleWS.shiftToNext
-             , "move focused window to next workspace"
-             )
-             -- ───────────────────────────── screen management •2.09.03•    ──┤
-             -- ──────────────────── switch ← screen management •2.09.03.01• ──┤
-           , ( (metaMask, xK_w)
+           [ -- ───────────────────────────── screen management •2.09.02•    ──┤
+             -- ──────────────────── switch ← screen management •2.09.02.01• ──┤
+             ( (metaMask, xK_w)
              , PhyScreens.onPrevNeighbour StackSet.view
-             , "switch to previous screen"
+             , "Switch to previous screen"
              )
            , ( (metaMask, xK_e)
              , PhyScreens.onNextNeighbour StackSet.view
-             , "switch to next screen"
+             , "Switch to next screen"
              )
            ]
            ++
            [ ( (metaMask .|. altMask, key)
              , PhyScreens.viewScreen screenNum
-             , "switch to screen nr." ++ show screenNum
+             , "Switch to screen nr." ++ show screenNum
              )
            | (key, screenNum) <- zip numericKeys [0..]
            ]
            ++
-           [ -- ─────────────── move window ← screen management •2.09.03.02• ──┤
+           [ -- ─────────────── move window ← screen management •2.09.02.02• ──┤
              ( (metaMask .|. altMask .|. shiftMask, xK_w)
              , PhyScreens.onPrevNeighbour StackSet.shift
-             , "move focused window to previous screen"
+             , "Move focused window to previous screen"
              )
            , ( (metaMask .|. altMask .|. shiftMask, xK_e)
              , PhyScreens.onNextNeighbour StackSet.shift
-             , "move focused window to next screen"
+             , "Move focused window to next screen"
              )
            ]
            ++
            [ ( (metaMask .|. altMask .|. shiftMask, key)
              , PhyScreens.sendToScreen screenNum
-             , "move focused window to screen nr." ++ show screenNum
+             , "Move focused window to screen nr." ++ show screenNum
              )
            | (key, screenNum) <- zip numericKeys [0..]
            ]
            ++
-           [ -- ───────────────────────────── layout management •2.09.04•    ──┤
-             -- ──────────────────── switch ← layout management •2.09.04.01• ──┤
+           [ -- ───────────────────────────── layout management •2.09.03•    ──┤
+             -- ──────────────────── switch ← layout management •2.09.03.01• ──┤
              ( (metaMask, xK_space)
              , XM.sendMessage XM.NextLayout
-             , "rotate through the available layout algorithms"
+             , "Rotate through the available layout algorithms"
              )
              -- TODO doesn't work
              --  , ( (metaMask .|. shiftMask, xK_space)
              --    , setLayout layoutHook
              --    , "reset the layouts on the current workspace to default"
              --    )
-             -- ────────────────────────────────────────── execute •2.09.05• ──┤
+             -- ────────────────────────────────────────── execute •2.09.04• ──┤
            , ( (metaMask .|. shiftMask, xK_Return)
              , XM.spawn terminal
-             , "open terminal"
+             , "Open terminal"
              )
            , ( (metaMask .|. shiftMask .|. altMask, xK_Return)
              , XM.spawn alternativeTerminal
-             , "open alternative terminal"
+             , "Open alternative terminal"
              )
            , ( (metaMask, xK_p)
              , XM.spawn programLauncher
-             , "open program launcher"
+             , "Open program launcher"
              )
            , ( (metaMask .|. altMask, xK_p)
              , xmonadCommands >>= Commands.runCommand
-             , "run an internal xmonad command"
+             , "Run an internal XMonad command"
              )
            , ( (metaMask .|. shiftMask, xK_c)
              , CopyWindow.kill1
-             , "close focused window (in the current workspace)"
+             , "Close focused window (in the current workspace)"
              )
            , ( (metaMask .|. altMask .|. shiftMask, xK_c)
              , CopyWindow.killAllOtherCopies
-             , "close all other copies of focused window"
+             , "Close all other copies of focused window"
              )
-             -- ────────────────────────────────────── scratchpads •2.09.06• ──┤
+             -- ────────────────────────────────────── scratchpads •2.09.05• ──┤
            , ( (metaMask, xK_a)
              , Submap.submap $ Map.fromList
                  [ (kb, action)
                  | (kb, action, _) <- scratchpadsKeymaps
                  ]
-             , "scratchpads"
+             , "Scratchpads"
              )
            , ( (metaMask .|. altMask, xK_a)
              , Prompt.mkXPromptWithModes customPrompts xpConfig
-             , "set of custom prompts" -- TODO better desc
+             , "Set of custom prompts" -- TODO better desc
              )
-             -- ─────────────────────────────────────────── search •2.09.07• ──┤
+             -- ─────────────────────────────────────────── search •2.09.06• ──┤
            , ( (metaMask, xK_s)
              , Submap.submap $ Map.fromList
                  [ (kb, Search.promptSearch Prompt.defaultXPConfig action)
                  | (kb, action, _) <- searchKeymaps
                  ]
-             , "search prompt"
+             , "Search prompt"
              )
            , ( (metaMask .|. shiftMask, xK_s)
              , Submap.submap $ Map.fromList
                  [ (kb, Search.selectSearch action)
                  | (kb, action, _) <- searchKeymaps
                  ]
-             , "search from selection"
+             , "Search from selection"
              )
-             -- ──────────────────────────────────────────── media •2.09.08• ──┤
+             -- ──────────────────────────────────────────── media •2.09.07• ──┤
            , ( (0, XF86.xF86XK_AudioLowerVolume)
-             , XM.spawn "pactl set-sink-volume <%= local! :pa_sink %> -5%"
-             , "increase sink volume"
+             , spawnAndNotify "pactl set-sink-volume <%= local! :pa_sink %> -5%"
+                              "Decreasing volume of 5%"
+             , "Increase sink volume"
              )
            , ( (0, XF86.xF86XK_AudioRaiseVolume)
-             , XM.spawn "pactl set-sink-volume <%= local! :pa_sink %> +5%"
-             , "decrease sink volume"
+             , spawnAndNotify "pactl set-sink-volume <%= local! :pa_sink %> +5%"
+                              "Increasing volume of 5%"
+             , "Decrease sink volume"
              )
            , ( (0, XF86.xF86XK_AudioMute)
-             , XM.spawn "pactl set-sink-mute <%= local! :pa_sink %> toggle"
-             , "toggle mute/unmute"
+             , spawnAndNotify "pactl set-sink-mute <%= local! :pa_sink %> toggle"
+                              "Toggling mute"
+             , "Toggle mute/unmute"
              )
            , ( (0, XF86.xF86XK_AudioPlay)
-             , XM.spawn "playerctl play-pause"
-             , "toggle play/pause state (in default media-player)"
+             , spawnAndNotify "playerctl play-pause"
+                              "Toggling play/pause"
+             , "Toggle play/pause state (in default media-player)"
              )
            , ( (0, XF86.xF86XK_AudioPrev)
-             , XM.spawn "playerctl previous"
-             , "play previous track (in default media-player)"
+             , spawnAndNotify "playerctl previous"
+                              "Playing previous track"
+             , "Play previous track (in default media-player)"
              )
            , ( (0, XF86.xF86XK_AudioNext)
-             , XM.spawn "playerctl next"
-             , "play next track (in default media-player)"
+             , spawnAndNotify "playerctl next"
+                              "Playing next track"
+             , "Play next track (in default media-player)"
              )
-             -- ───────────────────────────────────────── keyboard •2.09.09• ──┤
+             -- ───────────────────────────────────────── keyboard •2.09.08• ──┤
            , ( (metaMask, xK_F2)
-             , XM.spawn "setxkbmap <%= local! :kb_layout_alt %>"
-             , "change kb layout to alternative (<%= local! :kb_layout_alt %>)"
+             , spawnAndNotify "setxkbmap <%= local! :kb_layout_alt %>"
+                              "keyboard layout changed to alternative: <%= local! :kb_layout_alt %>"
+             , "Change keyboard layout to alternative " ++
+               "(<%= local! :kb_layout_alt %>)"
              )
            , ( (metaMask .|. shiftMask, xK_F2)
-             , XM.spawn "setxkbmap <%= local! :kb_layout_main %>"
-             , "change kb layout back to main (<%= local! :kb_layout_main %>)"
+             , spawnAndNotify "setxkbmap <%= local! :kb_layout_main %>"
+                              "keyboard layout changed back to main: <%= local! :kb_layout_main %>"
+             , "Change keyboard layout back to main " ++
+               "(<%= local! :kb_layout_main %>)"
              )
-             -- ───────────────────────────────────────────── help •2.09.10• ──┤
+             -- ───────────────────────────────────────────── help •2.09.09• ──┤
            , ( (metaMask .|. shiftMask, xK_slash)
-             , XM.spawn $ xmessage help
-             , "show available bindings"
+             , showMessage help
+             , "Show available bindings"
              )
              -- ───────────────────────────────────── quit/restart •2.09.10• ──┤
            , ( (metaMask, xK_q)
              , XM.spawn recompileXMonad
-             , "restart xmonad"
+             , "Restart XMonad"
              )
            , ( (metaMask .|. shiftMask, xK_q)
              , XM.io $ exitWith ExitSuccess
-             , "quit xmonad"
+             , "Quit XMonad"
              )
            ]
   where
@@ -785,7 +778,7 @@ help  = List.intercalate "\n" ( header
              , concat $ replicate (length title) [titleSep]
              , ""
              ]
-    title = "xmonad keymaps"
+    title = "XMonad keymaps"
     titleSep = '─'
 
     kdSep = " : "
@@ -1204,10 +1197,19 @@ padStr n s
 
 -- ────────────────────────────────────────────────── misc - xmessage •3.08• ──┤
 
-xmessage :: String
-         -> String
+showMessage :: XM.MonadIO m
+            => String
+            -> m ()
 
-xmessage msg = "echo \"" ++ msg ++ "\" | xmessage -file -"
+showMessage msg = XM.spawn $ "echo \"" ++ msg ++ "\" | xmessage -file -"
+
+-- ───────────────────────────────────────────────────── misc - spawn •3.09• ──┤
+spawnAndNotify :: XM.MonadIO m
+               => String
+               -> String
+               -> m ()
+
+spawnAndNotify cmd msg = XM.spawn $ cmd ++ "; notify-send '" ++ msg ++ "'"
 
 -- ────────────────────────────────────────────────────────────────────────────┘
 
