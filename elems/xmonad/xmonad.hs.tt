@@ -132,9 +132,7 @@ import qualified XMonad      as XM
 
 import qualified XMonad.Actions.Commands           as Commands
 import qualified XMonad.Actions.ConstrainedResize  as ConstrResize
-import qualified XMonad.Actions.CycleRecentWS      as CycleRecentWS
 import qualified XMonad.Actions.CycleWS            as CycleWS
-import qualified XMonad.Actions.CycleWindows       as CycleWindows
 import qualified XMonad.Actions.DwmPromote         as Promote
 import qualified XMonad.Actions.FlexibleManipulate as FlexM
 import qualified XMonad.Actions.FlexibleResize     as FlexR
@@ -424,14 +422,6 @@ keymaps  = [ -- ─────────────────────�
              , RotSlaves.rotSlavesDown
              , "Rotate (down) the windows in the current stack, " ++
                "excluding the master window"
-             )
-           , ( (metaMask .|. shiftMask .|. controlMask, xK_j)
-             , CycleWindows.rotFocused'
-             , "Rotate windows through the focused frames"
-             )
-           , ( (metaMask .|. shiftMask .|. controlMask, xK_k)
-             , CycleWindows.rotUnfocused'
-             , "Rotate windows through the unfocused frames"
              )
              -- ──────────────────── resize ← window management •2.09.01.04• ──┤
              --
