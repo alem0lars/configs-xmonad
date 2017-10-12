@@ -34,6 +34,8 @@
 
   variable "pulseaudio.default_sink_index", as: :pa_sink
 
+  variable "taffybar.height", as: :bar_height
+
   variable "kb.layouts.main", as: :kb_layout_main
   variable "kb.layouts.alt",  as: :kb_layout_alt
 
@@ -130,7 +132,6 @@ import qualified XMonad      as XM
 
 import qualified XMonad.Actions.Commands           as Commands
 import qualified XMonad.Actions.ConstrainedResize  as ConstrResize
-import qualified XMonad.Actions.CopyWindow         as CopyWindow -- TODO integrate with taffybar (status bar PP)
 import qualified XMonad.Actions.CycleRecentWS      as CycleRecentWS
 import qualified XMonad.Actions.CycleWS            as CycleWS
 import qualified XMonad.Actions.CycleWindows       as CycleWindows
@@ -138,7 +139,6 @@ import qualified XMonad.Actions.DwmPromote         as Promote
 import qualified XMonad.Actions.FlexibleManipulate as FlexM
 import qualified XMonad.Actions.FlexibleResize     as FlexR
 import qualified XMonad.Actions.FloatSnap          as FloatSnap
-import qualified XMonad.Actions.FocusNth           as FocusNth
 import qualified XMonad.Actions.Launcher           as Launcher
 import qualified XMonad.Actions.PhysicalScreens    as PhyScreens
 import qualified XMonad.Actions.RotSlaves          as RotSlaves
@@ -176,7 +176,6 @@ import qualified XMonad.Util.Run             as Run
 import qualified System.Taffybar.Hooks.PagerHints as Taffybar
 
 -- ────────────────────────────────────────────────────────────────────────────┘
-
 
 -- ───────────────────────────────────────────────────────────── xconfig •2• ──┐
 
@@ -350,7 +349,8 @@ scratchpadSize :: StackSet.RationalRect
 scratchpadSize  = StackSet.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)
 
 scratchpads :: [Scratchpad.NamedScratchpad]
-scratchpads  = [ scratchpad "term" terminal
+scratchpads  = [ scratchpad "term" "$SHELL"
+               , scratchpad "edit" "$EDITOR"
                , scratchpad "htop" "htop"
                <% if has_feature? :python %>
                , scratchpad "ipython" "ipython"
@@ -388,6 +388,10 @@ altMask  = mod1Mask
 keymaps :: [((KeyMask, KeySym), X (), String)]
 keymaps  = [ -- ───────────────────────────── window management •2.09.01•    ──┤
              -- ────────────── change focus ← window management •2.09.01.01• ──┤
+             --
+             --                             keys prefix: (metaMask) + modifiers
+             --                            keys pattern: any movement key
+             --
              ( (metaMask, xK_j)
              , XM.windows StackSet.focusDown
              , "Move focus to the next window"
@@ -398,15 +402,11 @@ keymaps  = [ -- ─────────────────────�
              )
            ]
            ++
-           [ -- ───────────────── focus nth ← window management •2.09.01.02• ──┤
-             ( (metaMask .|. altMask, key) -- TODO check if it works
-             , FocusNth.focusNth num
-             , "Focus the window nr." ++ show num ++ " of the current workspace"
-             )
-           | (key, num) <- zip numericKeys [0..]
-           ]
-           ++
            [ -- ────────────────────── swap ← window management •2.09.01.03• ──┤
+             --
+             --               keys prefix: (metaMask .|. shiftMask) + modifiers
+             --              keys pattern: any movement key
+             --
              ( (metaMask .|. shiftMask, xK_j)
              , XM.windows StackSet.swapDown
              , "Swap focused window with next window"
@@ -415,45 +415,29 @@ keymaps  = [ -- ─────────────────────�
              , XM.windows StackSet.swapUp
              , "Swap focused window with previous window"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_j)
+           , ( (metaMask .|. shiftMask .|. altMask, xK_j)
              , RotSlaves.rotSlavesUp
              , "Rotate (up) the windows in the current stack, " ++
                "excluding the master window"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_k)
+           , ( (metaMask .|. shiftMask .|. altMask, xK_k)
              , RotSlaves.rotSlavesDown
              , "Rotate (down) the windows in the current stack, " ++
                "excluding the master window"
              )
-           , ( (metaMask .|. altMask, xK_Tab) -- TODO check if worth
-             , CycleWindows.cycleRecentWindows [xK_Super_L] xK_s xK_w
-             , "Cycle recent windows"
+           , ( (metaMask .|. shiftMask .|. controlMask, xK_j)
+             , CycleWindows.rotFocused'
+             , "Rotate windows through the focused frames"
              )
-           , ( (metaMask, xK_z) -- TODO check if worth
-             , CycleWindows.rotOpposite
-             , "Opposite rotation on a stack"
-             )
-           , ( (metaMask, xK_Up)
-             , CycleWindows.rotUnfocusedUp
-             , "Rotate windows up through the unfocused frames"
-             )
-           , ( (metaMask, xK_Down)
-             , CycleWindows.rotUnfocusedDown
-             , "Rotate windows down through the unfocused frames"
-             )
-           , ( (metaMask .|. altMask, xK_Up)
-             , CycleWindows.rotFocusedUp
-             , "Rotate windows up through the focused frames"
-             )
-           , ( (metaMask .|. altMask, xK_Down)
-             , CycleWindows.rotFocusedDown
-             , "Rotate windows down through the focused frames"
+           , ( (metaMask .|. shiftMask .|. controlMask, xK_k)
+             , CycleWindows.rotUnfocused'
+             , "Rotate windows through the unfocused frames"
              )
              -- ──────────────────── resize ← window management •2.09.01.04• ──┤
-           , ( (metaMask, xK_n)
-             , XM.refresh
-             , "Resize viewed windows to the correct size"
-             )
+             --
+             --                             keys prefix: (metaMask) + modifiers
+             --                            keys pattern: any resize key
+             --
            , ( (metaMask, xK_h)
              , XM.sendMessage XM.Shrink
              , "Shrink the master area"
@@ -463,6 +447,10 @@ keymaps  = [ -- ─────────────────────�
              , "Expand the master area"
              )
              -- ────────────── master/slave ← window management •2.09.01.05• ──┤
+             --
+             --                             keys prefix: (metaMask) + modifiers
+             --                            keys pattern: xK_m || xK_plus
+             --
            , ( (metaMask .|. shiftMask, xK_m)
              , Promote.dwmpromote
              , "Swap focused window with master window"
@@ -481,16 +469,11 @@ keymaps  = [ -- ─────────────────────�
              )
            ]
            ++
-           [ -- ───────── copy to workspace ← window management •2.09.01.06• ──┤
-             ( (metaMask .|. altMask .|. shiftMask, key)
-             , XM.windows $ CopyWindow.copy workspace
-             , "Copy focused window to workspace '" ++ workspace ++ "'" ++
-               " (nr." ++ show num ++ ")"
-             )
-           | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
-           ]
-           ++
-           [ -- ───────── move to workspace ← window management •2.09.01.07• ──┤
+           [ -- ───────── move to workspace ← window management •2.09.01.06• ──┤
+             --
+             --               keys prefix: (metaMask .|. shiftMask) + modifiers
+             --              keys pattern: numbers
+             --
              ( (metaMask .|. shiftMask, key)
              , XM.windows $ StackSet.shift workspace
              , "Move focused window to workspace '" ++ workspace ++ "' " ++
@@ -518,14 +501,24 @@ keymaps  = [ -- ─────────────────────�
 -- , ((myModMask .|. shiftMask, xK_a),     sendMessage Equalize)
            ++
            [ -- ───────────────────── float ← window management •2.09.01.08• ──┤
+             -- ─────────── misc ← float ← window management •2.09.01.08.01• ──┤
+             --
+             --                             keys prefix: (metaMask) + modifiers
+             --                            keys pattern: xK_t
+             --
              ( (metaMask, xK_t)
              , XM.withFocused $ XM.windows . StackSet.sink
              , "Push window back into tiling"
              )
-           , ( (metaMask .|. controlMask, xK_r)
+           , ( (metaMask .|. controlMask, xK_t)
              , Place.placeFocused floatingWindowPlacement
              , "Manually reposition focused floating window"
              )
+             -- ─────── movement ← float ← window management •2.09.01.08.02• ──┤
+             --
+             --             keys prefix: (metaMask .|. controlMask) + modifiers
+             --            keys pattern: arrows
+             --
            , ( (metaMask .|. controlMask, xK_Left)
              , XM.withFocused $ FloatSnap.snapMove FloatSnap.L Nothing
              , "Snap focused window to left border"
@@ -560,21 +553,32 @@ keymaps  = [ -- ─────────────────────�
              )
              -- ────────────────────────── workspace management •2.09.02•    ──┤
              -- ───────────────── switch ← workspace management •2.09.02.01• ──┤
-           , ( (metaMask .|. controlMask, xK_Tab)
-             , CycleRecentWS.cycleRecentWS [xK_Alt_L] xK_Tab xK_grave
-             , "Cycle through most recent workspaces"
+             --
+             --                                         keys prefix: (metaMask)
+             --                                        keys pattern: numbers
+             --
+             --                             keys prefix: (metaMask .|. altMask)
+             --                            keys pattern: xK_a || arrows
+             --
+           , ( (metaMask .|. controlMask, xK_a)
+             , CycleWS.toggleWS
+             , "Toggle to the workspace displayed previously"
              )
-           , ( (metaMask .|. controlMask, xK_Down)
+           , ( (metaMask .|. altMask, xK_Down)
              , CycleWS.prevWS
              , "Switch to previous workspace"
              )
-           , ( (metaMask .|. controlMask, xK_Up)
+           , ( (metaMask .|. altMask, xK_Left)
+             , CycleWS.prevWS
+             , "Switch to previous workspace"
+             )
+           , ( (metaMask .|. altMask, xK_Up)
              , CycleWS.nextWS
              , "Switch to next workspace"
              )
-           , ( (metaMask .|. controlMask, xK_z)
-             , CycleWS.toggleWS
-             , "Toggle to the workspace displayed previously"
+           , ( (metaMask .|. altMask, xK_Right)
+             , CycleWS.nextWS
+             , "Switch to next workspace"
              )
            ]
            ++
@@ -586,8 +590,23 @@ keymaps  = [ -- ─────────────────────�
            | (workspace, key, num) <- zip3 workspaces numericKeys [1..]
            ]
            ++
+           [ -- ──────────────── dynamic ← workspace management •2.09.02.01• ──┤
+-- TODO
+--           , ( (metaMask .|. controlMask, xK_space)
+--             , DynamicProjects.switchProjectPrompt xpConfig
+--             , "Prompt to switch projects"
+--             )
+           ]
+           ++
            [ -- ───────────────────────────── screen management •2.09.02•    ──┤
              -- ──────────────────── switch ← screen management •2.09.02.01• ──┤
+             --
+             --                             keys prefix: (metaMask .|. altMask)
+             --                            keys pattern: numbers
+             --
+             --                                       keys prefix: (metaMask)
+             --                                      keys pattern: xK_w || xK_e
+             --
              ( (metaMask, xK_w)
              , PhyScreens.onPrevNeighbour StackSet.view
              , "Switch to previous screen"
@@ -606,11 +625,18 @@ keymaps  = [ -- ─────────────────────�
            ]
            ++
            [ -- ─────────────── move window ← screen management •2.09.02.02• ──┤
-             ( (metaMask .|. altMask .|. shiftMask, xK_w)
+             --
+             --               keys prefix: (metaMask .|. altMask .|. shiftMask)
+             --              keys pattern: numbers
+             --
+             --                           keys prefix: (metaMask .|. shiftMask)
+             --                          keys pattern: xK_w || xK_e
+             --
+             ( (metaMask .|. shiftMask, xK_w)
              , PhyScreens.onPrevNeighbour StackSet.shift
              , "Move focused window to previous screen"
              )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_e)
+           , ( (metaMask .|. shiftMask, xK_e)
              , PhyScreens.onNextNeighbour StackSet.shift
              , "Move focused window to next screen"
              )
@@ -629,11 +655,6 @@ keymaps  = [ -- ─────────────────────�
              , XM.sendMessage XM.NextLayout
              , "Rotate through the available layout algorithms"
              )
-             -- TODO doesn't work
-             --  , ( (metaMask .|. shiftMask, xK_space)
-             --    , setLayout layoutHook
-             --    , "reset the layouts on the current workspace to default"
-             --    )
              -- ────────────────────────────────────────── execute •2.09.04• ──┤
            , ( (metaMask .|. shiftMask, xK_Return)
              , XM.spawn terminal
@@ -652,12 +673,8 @@ keymaps  = [ -- ─────────────────────�
              , "Run an internal XMonad command"
              )
            , ( (metaMask .|. shiftMask, xK_c)
-             , CopyWindow.kill1
+             , XM.kill
              , "Close focused window (in the current workspace)"
-             )
-           , ( (metaMask .|. altMask .|. shiftMask, xK_c)
-             , CopyWindow.killAllOtherCopies
-             , "Close all other copies of focused window"
              )
              -- ────────────────────────────────────── scratchpads •2.09.05• ──┤
            , ( (metaMask, xK_a)
@@ -666,10 +683,6 @@ keymaps  = [ -- ─────────────────────�
                  | (kb, action, _) <- scratchpadsKeymaps
                  ]
              , "Scratchpads"
-             )
-           , ( (metaMask .|. altMask, xK_a)
-             , Prompt.mkXPromptWithModes customPrompts xpConfig
-             , "Set of custom prompts" -- TODO better desc
              )
              -- ─────────────────────────────────────────── search •2.09.06• ──┤
            , ( (metaMask, xK_s)
@@ -745,6 +758,10 @@ keymaps  = [ -- ─────────────────────�
              , "Show available bindings"
              )
              -- ───────────────────────────────────── quit/restart •2.09.11• ──┤
+           , ( (metaMask, xK_r)
+             , XM.refresh
+             , "Resize viewed windows to the correct size"
+             )
            , ( (metaMask, xK_q)
              , XM.spawn recompileXMonad
              , "Restart XMonad"
@@ -765,15 +782,6 @@ keymaps  = [ -- ─────────────────────�
                    ++ " else"
                    ++ "   xmessage xmonad not in \\$PATH: \"$PATH\";"
                    ++ " fi"
-
-    customPrompts = Launcher.defaultLauncherModes Launcher.LauncherConfig
-                  { Launcher.pathToHoogle = "/usr/bin/hoogle"
-                  , Launcher.browser      = "<%= local! :web_browser %>"
-                  }
-                  ++
-                  [
-                  -- insert the custom prompts here :)
-                  ]
 
 help :: String
 help  = List.intercalate "\n" ( header
@@ -814,8 +822,12 @@ scratchpadsKeymaps  = [ ( (0, xK_t)
                         , Scratchpad.namedScratchpadAction scratchpads "term"
                         , "terminal"
                         )
+                      , ( (0, xK_e)
+                        , Scratchpad.namedScratchpadAction scratchpads "edit"
+                        , "editor"
+                        )
                       , ( (0, xK_i)
-                        , Scratchpad.namedScratchpadAction scratchpads "top"
+                        , Scratchpad.namedScratchpadAction scratchpads "htop"
                         , "process info"
                         )
                         <% if has_feature? :python %>
@@ -973,14 +985,27 @@ shouldClickJustFocus  = True
 -- ─────────────────────────────────────────────────────────── prompt •2.12• ──┤
 
 xpConfig :: Prompt.XPConfig
-xpConfig  = Prompt.defaultXPConfig
-          { Prompt.font        = toXft font
-          , Prompt.borderColor = toHex inactiveBorderColor
-          , Prompt.bgColor     = toHex inactiveBgColor
-          , Prompt.fgColor     = toHex inactiveFgColor
-          , Prompt.bgHLight    = toHex highlightBgColor
-          , Prompt.fgHLight    = toHex highlightFgColor
-          , Prompt.position    = Prompt.Top
+xpConfig  = Prompt.XPC
+          { Prompt.font              = toXft font
+          , Prompt.bgColor           = toHex inactiveFgColor
+          , Prompt.fgColor           = toHex inactiveBgColor
+          , Prompt.fgHLight          = toHex highlightBgColor
+          , Prompt.bgHLight          = toHex highlightFgColor
+          , Prompt.borderColor       = toHex inactiveBgColor
+          , Prompt.promptBorderWidth = 1
+          , Prompt.position          = Prompt.Top
+          , Prompt.alwaysHighlight   = False
+          , Prompt.height            = <%= local! :bar_height %>
+          , Prompt.maxComplRows      = Nothing
+          , Prompt.historySize       = 128
+          , Prompt.historyFilter     = id
+          , Prompt.promptKeymap      = Prompt.defaultXPKeymap
+          , Prompt.completionKey     = (0, xK_Tab)
+          , Prompt.changeModeKey     = xK_grave
+          , Prompt.defaultText       = []
+          , Prompt.autoComplete      = Just 100000 -- 100ms
+          , Prompt.showCompletionOnTab = False
+          , Prompt.searchPredicate   = Search.isPrefixOf
           }
 
 -- ─────────────────────────────────────────────────────────── colors •2.13• ──┤
