@@ -722,25 +722,25 @@ keymaps  = [ -- ─────────────────────�
              )
              -- ───────────────────────────────────────── keyboard •2.09.08• ──┤
            , ( (metaMask, xK_F2)
-             , spawnAndNotify "setxkbmap <%= local! :kb_layout_alt %>"
-                              "keyboard layout changed to alternative: <%= local! :kb_layout_alt %>"
-             , "Change keyboard layout to alternative " ++
-               "(<%= local! :kb_layout_alt %>)"
-             )
-           , ( (metaMask .|. shiftMask, xK_F2)
              , spawnAndNotify "setxkbmap <%= local! :kb_layout_main %>"
                               "keyboard layout changed back to main: <%= local! :kb_layout_main %>"
              , "Change keyboard layout back to main " ++
                "(<%= local! :kb_layout_main %>)"
              )
+           , ( (metaMask .|. shiftMask, xK_F2)
+             , spawnAndNotify "setxkbmap <%= local! :kb_layout_alt %>"
+                              "keyboard layout changed to alternative: <%= local! :kb_layout_alt %>"
+             , "Change keyboard layout to alternative " ++
+               "(<%= local! :kb_layout_alt %>)"
+             )
              -- ───────────────────────────────────────── keyboard •2.09.09• ──┤
            , ( (metaMask, xK_F3)
-             , spawnAndNotify "dunstctl --cmd pause" "pausing notifications"
-             , "Pause notifications"
-             )
-           , ( (metaMask .|. shiftMask, xK_F3)
              , spawnAndNotify "dunstctl --cmd resume" "resuming notifications"
              , "Resume notifications"
+             )
+           , ( (metaMask .|. shiftMask, xK_F3)
+             , spawnAndNotify "sleep 3; dunstctl --cmd pause" "pausing notifications"
+             , "Pause notifications"
              )
              -- ───────────────────────────────────────────── help •2.09.10• ──┤
            , ( (metaMask .|. shiftMask, xK_slash)
