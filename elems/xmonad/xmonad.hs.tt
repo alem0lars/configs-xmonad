@@ -738,7 +738,7 @@ keymaps  = [ -- ─────────────────────�
              , spawnAndNotify "dunstctl --cmd pause" "pausing notifications"
              , "Pause notifications"
              )
-           , ( (metaMask, xK_F4)
+           , ( (metaMask .|. shiftMask, xK_F3)
              , spawnAndNotify "dunstctl --cmd resume" "resuming notifications"
              , "Resume notifications"
              )
@@ -1233,7 +1233,7 @@ spawnAndNotify :: XM.MonadIO m
                -> String
                -> m ()
 
-spawnAndNotify cmd msg = XM.spawn $ cmd ++ "; notify-send '" ++ msg ++ "'"
+spawnAndNotify cmd msg = XM.spawn $ "notify-send '" ++ msg ++ "'; " ++ cmd
 
 -- ────────────────────────────────────────────────────────────────────────────┘
 
