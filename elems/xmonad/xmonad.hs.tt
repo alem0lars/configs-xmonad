@@ -159,7 +159,9 @@ import qualified XMonad.Layout.NoBorders             as NoBorders
 import qualified XMonad.Layout.PerWorkspace          as PerWorkspace
 import qualified XMonad.Layout.Reflect               as Reflect
 import qualified XMonad.Layout.Tabbed                as Tabbed
-import qualified XMonad.Layout.BinarySpacePartition  as BinarySpacePartition
+import qualified XMonad.Layout.Combo                 as Combo
+import qualified XMonad.Layout.TwoPane               as TwoPane
+import qualified XMonad.Layout.WindowNavigation      as WindowNavigation
 import qualified XMonad.Layout.WorkspaceDir          as WorkspaceDir
 
 import qualified XMonad.ManageHook as ManageHook
@@ -250,17 +252,22 @@ layoutHook = NoBorders.smartBorders . ManageDocks.avoidStruts
                  , Tabbed.decoHeight          = <%= local! :tabbed_height %>
                  }
 
-    refLayouts       = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    editLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    actLayouts       = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    suppLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    orgLayouts       = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    socialLayouts    = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    playLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    mgmtLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    miscLayouts      = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    vmLayouts        = tabbedLayout ||| BinarySpacePartition.emptyBSP
-    defaultLayouts   = tabbedLayout ||| BinarySpacePartition.emptyBSP
+--    comboTabbed = Combo.combineTwo (TwoPane.TwoPane 0.03 0.5)
+--                                   tabbedLayout
+--                                   tabbedLayout
+    comboTabbed = TwoPane.TwoPane 0.03 0.5
+
+    refLayouts     = tabbedLayout ||| comboTabbed
+    editLayouts    = tabbedLayout ||| comboTabbed
+    actLayouts     = tabbedLayout ||| comboTabbed
+    suppLayouts    = tabbedLayout ||| comboTabbed
+    orgLayouts     = tabbedLayout ||| comboTabbed
+    socialLayouts  = tabbedLayout ||| comboTabbed
+    playLayouts    = tabbedLayout ||| comboTabbed
+    mgmtLayouts    = tabbedLayout ||| comboTabbed
+    miscLayouts    = tabbedLayout ||| comboTabbed
+    vmLayouts      = tabbedLayout ||| comboTabbed
+    defaultLayouts = tabbedLayout ||| comboTabbed
 
 -- ─────────────────────────────────────────────────────── workspaces •2.02• ──┤
 
@@ -422,6 +429,22 @@ keymaps  = [ -- ─────────────────────�
              , RotSlaves.rotSlavesDown
              , "Rotate (down) the windows in the current stack, " ++
                "excluding the master window"
+             )
+           , ( (metaMask .|. shiftMask, xK_Up)
+             , XM.sendMessage $ WindowNavigation.Move WindowNavigation.U
+             , "Move window into sublayout that is up of its current position"
+             )
+           , ( (metaMask .|. shiftMask, xK_Down)
+             , XM.sendMessage $ WindowNavigation.Move WindowNavigation.D
+             , "Move window into sublayout that is down of its current position"
+             )
+           , ( (metaMask .|. shiftMask, xK_Left)
+             , XM.sendMessage $ WindowNavigation.Move WindowNavigation.L
+             , "Move window into sublayout that is left of its current position"
+             )
+           , ( (metaMask .|. shiftMask, xK_Right)
+             , XM.sendMessage $ WindowNavigation.Move WindowNavigation.R
+             , "Move window into sublayout that is right of its current position"
              )
              -- ──────────────────── resize ← window management •2.09.01.04• ──┤
              --
